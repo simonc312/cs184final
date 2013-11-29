@@ -114,8 +114,8 @@ void Scene::render(){
             Vector3f acceleration = totalForce/particle->getDensity();
             Vector3f velocity = particle->getVelocity() + DELTAT * acceleration;
             Vector3f position = particle->getPosition() + DELTAT * velocity;
-            cout << "Original: " << particle->getPosition() << endl;
-            cout << "New: " << position << endl;
+            //cout << "Original: " << particle->getPosition() << endl;
+            //cout << "New: " << position << endl;
             particle->setPosition(position);
             particle->setVelocity(velocity);
             m[position.x()][position.y()].r = 0;
