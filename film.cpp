@@ -34,7 +34,7 @@ void Film::saveImage( vector<vector<Color> > m) {
     a[name.size()] = 0;
     memcpy(a, name.c_str(), name.size());
     if(FreeImage_Save(FIF_PNG, bitmap, a, 0))
-        cout << "Image successfully saved! " << endl ;
+        cout << "Image " << count << " successfully saved! " << endl ;
     FreeImage_DeInitialise(); //Cleanup !
     count ++;
 }

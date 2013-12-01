@@ -15,12 +15,26 @@
 #define MAXINITPART 1
 #define MASS 10
 #define BPP 24
-#define H 25
-#define GRAVITY -9.81
+#define H 5
+#define GRAVITY -5
 #define RESTDENSITY 500
-#define GASCONSTANT 8.31
+#define GASCONSTANT 500
 #define VISC 0.7978
-#define DELTAT 0.1
+#define DELTAT 0.3
+#define RADIUS 4
+
+/*#define MAXINITPART 1
+#define MASS 0.02
+#define BPP 24
+#define H 5 //0.0625
+#define GRAVITY -1
+#define RESTDENSITY 1000
+#define GASCONSTANT 3.5
+#define VISC 3.5
+#define DELTAT 0.6
+#define RADIUS 2*/
+
+
 
 using namespace Eigen;
 using namespace std;
@@ -61,6 +75,7 @@ public:
     Particle(double m, Vector3f p, Vector3f v);
     double getDensity();
     double getDistance(Particle p);
+    double getDistance(Vector3f v);
     double getMass();
     Vector3f getPosition();
     Vector3f getVelocity();

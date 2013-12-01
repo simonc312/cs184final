@@ -19,3 +19,6 @@ film.o: film.cpp
 
 clean:
 	$(RM) *.o main
+
+images:
+	$(RM) *.png
