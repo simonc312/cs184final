@@ -39,17 +39,17 @@ void Scene::init(){
 
 // This is the hash function taken from the paper by kelager its from email
 // page 47
-// However the unorder map data structure I use from c++ has its own default 
-// hash function so I don't know if this will work...somehow make our own custom 
-// hash function and embed it to the data structure? 
+// However the unorder map data structure I use from c++ has its own default
+// hash function so I don't know if this will work...somehow make our own custom
+// hash function and embed it to the data structure?
 //int hashFunction(Vector3f pos){
   //  return (((int)pos.x()*73856093) xor ((int)pos.y()*19349663) xor ((int)pos.z()*83492791)) % getNextPrime(particles//->size());
 //}
 
 //int getNextPrime(int n){
 // this function should return the closest prime number >= n;
-    //it's hard finding code to use on the internet for this function which is 
-    //ridiculous 
+    //it's hard finding code to use on the internet for this function which is
+    //ridiculous
   //  return 1;
 //}
 
@@ -60,10 +60,10 @@ void Scene::render(){
     colour.r = (double)1.0;
     colour.g = (double)1.0;
     colour.b = (double)1.0;
-    
+
     // The spatial hash map to add particles to
     //typedef std::unordered_map<int,Particle> neighbormap;
-    
+
 
     Particle *p = new Particle(MASS, Vector3f(0, 0, 0), Vector3f(0, 0, 0));
     //neighbourAndDist * n = new neighbourAndDist();
@@ -88,7 +88,7 @@ void Scene::render(){
                     //neighbourAndDist * nAD = new neighbourAndDist();
                     //nAD->p = tempParticle;
                     //nAD->dist = dist;
-                    
+
                     double kern = particle->getKernel(dist);
                     //cout << "kern: " << kern << endl;
                     density += tempParticle->getMass() * kern;
@@ -102,7 +102,7 @@ void Scene::render(){
             neighbors.push_back(findNeighs);
         }
 
-        //second iteration of particles and only their neighbors 
+        //second iteration of particles and only their neighbors
         for(int j = 0; j < particles->size(); j++){
             Particle *particle = particles->at(j);
             Vector3f gravityForce(0, particle->getDensity() * GRAVITY, 0);
@@ -153,8 +153,8 @@ void Scene::render(){
 
 
             Vector3f position = particle->getPosition() + DELTAT * velocity;
-            cout << "Original: " << particle->getPosition() << endl;
-            cout << "New: " << position << endl;
+            //cout << "Original: " << particle->getPosition() << endl;
+            //cout << "New: " << position << endl;
             particle->setPosition(position);
 
 
