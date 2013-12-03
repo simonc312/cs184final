@@ -33,7 +33,7 @@ void Scene::init(){
             //std::pair<std::map<char, int>::iterator, bool> ret;
             //ret = positions.insert(std::pair<Vector3f, bool>(pos, true));
             //if(ret.second == true){
-                Particle *p = new Particle(MASS, pos, Vector3f::Zero());
+                Particle *p = new Particle(MASS, pos, Vector3f(0, 0, 0));
                 particles->push_back(p);
                 // m[x][y].r = 0;
                 // m[x][y].g = 0;
@@ -95,19 +95,25 @@ void Scene::render(){
 
 
             for(int k = -RADIUS; k < RADIUS; k++){
-                for(int l = -RADIUS; l < RADIUS; l++){
+               for(int l = -RADIUS; l < RADIUS; l++){
                     if (particle->getDistance(position + Vector3f(k, 0, 0) + Vector3f(0, l, 0)) < RADIUS) {
                         if(abs(velocity.x()) > 20 || abs(velocity.y()) > 20 || abs(velocity.z()) > 20 ){
                             m[position.x() + k][position.y()+ l].r = 1.0;
                             m[position.x() + k][position.y() + l].g = 0;
                             m[position.x() + k][position.y() + l].b = 0;
+                            // m[position.x()][position.y()].r = 1.0;
+                            // m[position.x()][position.y()].g = 0;
+                            // m[position.x()][position.y()].b = 0;
                         }else {
                             m[position.x() + k][position.y()+ l].r = 0;
                             m[position.x() + k][position.y() + l].g = 0;
                             m[position.x() + k][position.y() + l].b = 1.0;
+                            // m[position.x()][position.y()].r = 0;
+                            // m[position.x()][position.y()].g = 0;
+                            // m[position.x()][position.y()].b = 1.0;
                         }
-                    }
-                }
+                   }
+               }
             }
 
 
@@ -149,7 +155,7 @@ void Scene::render(){
             //cout << "glForce: " << gravityForce << endl;
             //cout << "vForce: " << viscosityForce << endl;
 
-            Vector3f totalForce = gravityForce + pressureForce + viscosityForce;
+            Vector3f totalForce = /*gravityForce + */pressureForce;/* + viscosityForce;*/
             //cout << "totalForce: " << totalForce << endl;
             Vector3f acceleration = totalForce/particle->getDensity();
             //cout << "1. " << particle->getVelocity() << endl;
