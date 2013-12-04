@@ -11,16 +11,17 @@
 #include <sstream>
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctime>
 
 #define MAXINITPART 1
 #define MASS 10
 #define BPP 24
-#define H 5
-#define GRAVITY -5
-#define RESTDENSITY 500
+#define H 20
+#define GRAVITY -10
+#define RESTDENSITY 250
 #define GASCONSTANT 500
-#define VISC 0.7978
-#define DELTAT 0.3
+#define VISC 20
+#define DELTAT 0.1
 #define RADIUS 4
 
 /*#define MAXINITPART 1
@@ -86,7 +87,7 @@ public:
     double getKernel(double r);
     double getKernDerive(double r);
     double getKernSecond(double r);
-    double getPressure();
+    double calcPressure();
 private:
     double mass, density;
     Vector3f position;
