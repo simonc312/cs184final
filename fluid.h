@@ -13,27 +13,29 @@
 #include <stdlib.h>
 #include <ctime>
 
-#define MAXINITPART 1
-#define MASS 10
-#define BPP 24
-#define H 20
-#define GRAVITY -10
-#define RESTDENSITY 250
-#define GASCONSTANT 500
-#define VISC 20
-#define DELTAT 0.1
-#define RADIUS 4
+#define _USE_MATH_DEFINES
 
-/*#define MAXINITPART 1
+// #define MAXINITPART 1
+// #define MASS 10
+// #define BPP 24
+// #define H 20
+// #define GRAVITY -10
+// #define IDEALDENSITY 275
+// #define STIFFNESS 100
+// #define VISC 20
+// #define DELTAT 0.2
+// #define RADIUS 4
+
+#define MAXINITPART 1
 #define MASS 0.02
 #define BPP 24
 #define H 5 //0.0625
-#define GRAVITY -1
-#define RESTDENSITY 1000
-#define GASCONSTANT 3.5
+#define GRAVITY -10
+#define IDEALDENSITY 10
+#define STIFFNESS 3.5
 #define VISC 3.5
-#define DELTAT 0.6
-#define RADIUS 2*/
+#define DELTAT 0.1
+#define RADIUS 4
 
 
 
@@ -85,7 +87,7 @@ public:
     void setVelocity(Vector3f v);
     void setDensity(double d);
     double getKernel(double r);
-    double getKernDerive(double r);
+    Vector3f getKernDerive(double r,  Vector3f rij);
     double getKernSecond(double r);
     double calcPressure();
 private:
