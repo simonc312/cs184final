@@ -12,7 +12,7 @@ Film::Film(int w, int h){
 
 void Film::saveImage( vector<vector<Color> > m) {
     FreeImage_Initialise();
-    FIBITMAP* bitmap = FreeImage_Allocate(width, height, BPP);
+    FIBITMAP* bitmap = FreeImage_Allocate(WIDTH, HEIGHT, BPP);
     RGBQUAD color;
     if (! bitmap )
         exit(1);

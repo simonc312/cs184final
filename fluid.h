@@ -18,11 +18,19 @@
 #define BPP 24
 #define H 20
 #define GRAVITY -10
-#define RESTDENSITY 250
-#define GASCONSTANT 500
+#define RESTDENSITY 100
+#define GASCONSTANT 250
 #define VISC 20
 #define DELTAT 0.1
 #define RADIUS 4
+
+#define LEFT  50
+#define TOP 450
+#define RIGHT 600
+#define BOTTOM 50
+#define HEIGHT 480
+#define WIDTH 640
+#define EPISILON 3
 
 /*#define MAXINITPART 1
 #define MASS 0.02
