@@ -33,7 +33,7 @@ void Scene::init(){
             //std::pair<std::map<char, int>::iterator, bool> ret;
             //ret = positions.insert(std::pair<Vector3f, bool>(pos, true));
             //if(ret.second == true){
-                Particle *p = new Particle(MASS, pos, Vector3f::Zero());
+                Particle *p = new Particle(MASS, pos, Vector3f(0, 0, 0));
                 particles->push_back(p);
                 // m[x][y].r = 0;
                 // m[x][y].g = 0;
@@ -144,7 +144,7 @@ void Scene::render(){
             viscosityForce *= VISC;
 
             Vector3f gravityForce(0, particle->getDensity() * GRAVITY, 0);
-            Vector3f pressureForce(pressure, pressure, 0);//pressure);
+            Vector3f pressureForce(0, pressure, 0);//pressure);
             //cout << "pForce: " << pressureForce << endl;
             //cout << "glForce: " << gravityForce << endl;
             //cout << "vForce: " << viscosityForce << endl;
