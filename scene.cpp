@@ -45,13 +45,35 @@ void Scene::init(){
     //}
 }
 
+// This is the hash function taken from the paper by kelager its from email
+// page 47
+// However the unorder map data structure I use from c++ has its own default
+// hash function so I don't know if this will work...somehow make our own custom
+// hash function and embed it to the data structure?
+//int hashFunction(Vector3f pos){
+  //  return (((int)pos.x()*73856093) xor ((int)pos.y()*19349663) xor ((int)pos.z()*83492791)) % getNextPrime(particles//->size());
+//}
+
+//int getNextPrime(int n){
+// this function should return the closest prime number >= n;
+    //it's hard finding code to use on the internet for this function which is
+    //ridiculous
+  //  return 1;
+//}
+
+
+
 void Scene::render(){
     Color colour;
     colour.r = (double)1.0;
     colour.g = (double)1.0;
     colour.b = (double)1.0;
 
-    //Particle *p = new Particle(MASS, Vector3f(0, 0, 0), Vector3f(0, 0, 0));
+    // The spatial hash map to add particles to
+    //typedef std::unordered_map<int,Particle> neighbormap;
+
+
+    Particle *p = new Particle(MASS, Vector3f(0, 0, 0), Vector3f(0, 0, 0));
     //neighbourAndDist * n = new neighbourAndDist();
     //n->p = p;
     //n->dist = 0;
@@ -59,11 +81,13 @@ void Scene::render(){
     for(int i = 0; i < timeStep; i++){  //for every timestep
         vector<vector<Color> > m = vector<vector<Color> > (HEIGHT, vector<Color>(WIDTH, colour));
         //for(int j= 0 ; j < maxParts; j ++){
-        //vector<vector<neighbourAndDist * > > neighbours = vector<vector<neighbourAndDist * > >(100, vector<neighbourAndDist *>(100, n));
+        vector<vector<Particle * > > neighbors;
+        //= vector<vector<Particle * > >(particles->size());
         for(int j = 0; j < particles->size(); j++){  //for every particle
             //cout << "j: " << j << endl;
             double density = 0;
             Particle *particle = particles->at(j);
+            vector<Particle *> findNeighs;
             for(int k = 0; k < particles->size(); k++){  //comparison to all other particles to see if they're close enough to effect the density
                 Particle *tempParticle = particles->at(k);
                 double dist = particle->getDistance(*tempParticle);
@@ -72,20 +96,21 @@ void Scene::render(){
                     //neighbourAndDist * nAD = new neighbourAndDist();
                     //nAD->p = tempParticle;
                     //nAD->dist = dist;
-                    //neighbours[j].push_back(nAD);
+
                     double kern = particle->getKernel(dist);
                     //cout << "kern: " << kern << endl;
                     density += tempParticle->getMass() * kern;
+                    findNeighs.push_back(tempParticle);
                 }
 
             }
             //density += particle->getMass() * particle->getKernel(0);
             //cout << "density: " << density << endl;
             particle->setDensity(density);
+            neighbors.push_back(findNeighs);
         }
 
-
-
+        //second iteration of particles and only their neighbors
 
         for(int j = 0; j < particles->size(); j++){
             Particle *particle = particles->at(j);
@@ -116,14 +141,17 @@ void Scene::render(){
             double pressureJ = particle->calcPressure();
             //vector<neighbourAndDist * > currNeighs = neighbours[j];
 
-            for(int k = 0; k < particles->size(); k++){//currNeighs.size(); k++){
-                Particle *tempParticle = particles->at(k);// currNeighs[k]->p;
+            vector<Particle * > curNeighs = neighbors[j];
+
+
+            for(int k = 0; k < curNeighs.size(); k++){//currNeighs.size(); k++){
+                Particle *tempParticle = curNeighs[k];// currNeighs[k]->p;
                 double tempMass = tempParticle->getMass();
                 double tempDens = tempParticle->getDensity();
                 Vector3f tempVel = tempParticle->getVelocity();
                 double dist = particle->getDistance(*tempParticle);
 
-                if(dist < H){
+                //if(dist < H){
 
                     //Pressure
                     double kernDerive = particle->getKernDerive(dist);
@@ -134,8 +162,9 @@ void Scene::render(){
 
                     //Viscosity
                     double kernSecond = particle->getKernSecond(dist);
+
                     viscosityForce += (tempVel - velocity) * tempMass / tempDens * kernSecond;
-                }
+                //}
 
             }
 
