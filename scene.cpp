@@ -217,7 +217,7 @@ void Scene::render(){
             //cout << particle->getVelocity().z() << endl;
 
             if((position.x() - RADIUS <= LEFT) || (position.y() - RADIUS <= BOTTOM) || (position.x() + RADIUS >= RIGHT) || (position.y() + RADIUS >= TOP)){
-                    velocity *= -0.1;
+                    velocity *= -0.4;
                     while((position.x() - RADIUS <= LEFT) || (position.y() - RADIUS <= BOTTOM) || (position.x() + RADIUS >= RIGHT) || (position.y() + RADIUS >= TOP)){
                         position = position + DELTAT * velocity;
                     }
