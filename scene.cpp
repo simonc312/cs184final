@@ -1,35 +1,43 @@
 #include "fluid.h"
+#define LEFT  50
+#define TOP 450
+#define RIGHT 600
+#define BOTTOM 50
+#define WIDTH 640
+#define HEIGHT 480
+#define EPISILON 3
 
 Scene::Scene(int p, double t, double s){
     maxParts = p;
     timeStep = t;
     step = s;
     particles = new vector<Particle *>();
-    film = new Film(640, 480);
+    film = new Film(WIDTH, HEIGHT);
     init();
     render();
 }
 
 void Scene::init(){
-    Color colour;
-    colour.r = (double)1.0;
-    colour.g = (double)1.0;
-    colour.b = (double)1.0;
-    vector<vector<Color> > m = vector<vector<Color> > (640, vector<Color>(480, colour));
+    // Color colour;
+    // colour.r = (double)1.0;
+    // colour.g = (double)1.0;
+    // colour.b = (double)1.0;
+    // vector<vector<Color> > m = vector<vector<Color> > (HEIGHT, vector<Color>(WIDTH, colour));
+    srand(time(NULL));
     //map<Vector3f, bool> positions;
-    //for(int i = 0; i < timeStep; i++){
-        for(int j= 0 ; j < maxParts; j ++){
-            int x = rand() % 450 + 50;
-            int y = rand() % 200 +50;
+    //for(int t = 0; t < timeStep; t++){
+        for(int i= 0 ; i < maxParts; i ++){
+            int x = rand() % 50 + WIDTH/ 2 - 25;//(RIGHT - LEFT - RADIUS)) + LEFT + RADIUS;
+            int y = rand() % 50 + HEIGHT - 100; //(TOP-BOTTOM - RADIUS)) + BOTTOM + RADIUS ;
             Vector3f pos(x, y, 0);
             //std::pair<std::map<char, int>::iterator, bool> ret;
             //ret = positions.insert(std::pair<Vector3f, bool>(pos, true));
             //if(ret.second == true){
-                Particle *p = new Particle(MASS, pos, Vector3f(-10.0, 0, -0.1));
+                Particle *p = new Particle(MASS, pos, Vector3f(0, 0, 0));
                 particles->push_back(p);
-                m[x][y].r = 0;
-                m[x][y].g = 0;
-                m[x][y].b = 1.0;
+                // m[x][y].r = 0;
+                // m[x][y].g = 0;
+                // m[x][y].b = 1.0;
             //}
         }
         //cout << particles->size() << endl;
@@ -37,78 +45,160 @@ void Scene::init(){
     //}
 }
 
+// This is the hash function taken from the paper by kelager its from email
+// page 47
+// However the unorder map data structure I use from c++ has its own default
+// hash function so I don't know if this will work...somehow make our own custom
+// hash function and embed it to the data structure?
+//int hashFunction(Vector3f pos){
+  //  return (((int)pos.x()*73856093) xor ((int)pos.y()*19349663) xor ((int)pos.z()*83492791)) % getNextPrime(particles//->size());
+//}
+
+//int getNextPrime(int n){
+// this function should return the closest prime number >= n;
+    //it's hard finding code to use on the internet for this function which is
+    //ridiculous
+  //  return 1;
+//}
+
+
+
 void Scene::render(){
     Color colour;
     colour.r = (double)1.0;
     colour.g = (double)1.0;
     colour.b = (double)1.0;
 
-    //Particle *p = new Particle(MASS, Vector3f(0, 0, 0), Vector3f(0, 0, 0));
+    // The spatial hash map to add particles to
+    //typedef std::unordered_map<int,Particle> neighbormap;
+
+
+    Particle *p = new Particle(MASS, Vector3f(0, 0, 0), Vector3f(0, 0, 0));
+    double maxD = -109238;
+    double minD = 109238;
     //neighbourAndDist * n = new neighbourAndDist();
     //n->p = p;
     //n->dist = 0;
     //map<Vector3f, bool> positions;
-    for(int i = 0; i < timeStep; i++){  //for every timestep
-        vector<vector<Color> > m = vector<vector<Color> > (640, vector<Color>(480, colour));
-        //for(int j= 0 ; j < maxParts; j ++){
-        //vector<vector<neighbourAndDist * > > neighbours = vector<vector<neighbourAndDist * > >(100, vector<neighbourAndDist *>(100, n));
-        for(int j = 0; j < particles->size(); j++){  //for every particle
-            //cout << "j: " << j << endl;
-            double density = 0;
-            Particle *particle = particles->at(j);
-            for(int k = 0; k < particles->size(); k++){  //comparison to all other particles to see if they're close enough to effect the density
-                Particle *tempParticle = particles->at(k);
+    for(int t = 0; t < timeStep; t++){  //for every timestep
+        vector<vector<Color> > m = vector<vector<Color> > (WIDTH, vector<Color>(HEIGHT, colour));
+        //for(int i= 0 ; i < maxParts; i ++){
+        vector<vector<Particle * > > neighbors;
+        //= vector<vector<Particle * > >(particles->size());
+        for(int i = 0; i < particles->size(); i++){  //for every particle
+            //cout << "i: " << i << endl;
+            //double density = MASS;
+
+            Particle *particle = particles->at(i);
+            double density = MASS;
+            vector<Particle *> findNeighs;
+            for(int j = 0; j < particles->size(); j++){  //comparison to all other particles to see if they're close enough to effect the density
+                Particle *tempParticle = particles->at(j);
                 double dist = particle->getDistance(*tempParticle);
 
-                if (dist < H){  //if the particle is close enough, add its mass * kernel to the density
+                if (dist <= H && i != j){  //if the particle is close enough, add its mass * kernel to the density
                     //neighbourAndDist * nAD = new neighbourAndDist();
                     //nAD->p = tempParticle;
                     //nAD->dist = dist;
-                    //neighbours[j].push_back(nAD);
+
                     double kern = particle->getKernel(dist);
                     //cout << "kern: " << kern << endl;
                     density += tempParticle->getMass() * kern;
+                    findNeighs.push_back(tempParticle);
                 }
 
             }
             //density += particle->getMass() * particle->getKernel(0);
             //cout << "density: " << density << endl;
-            particle->setDensity(density);
+            //cout << "1. " << i << ": " << density << endl;
+            particle->setDensity(density); //(*particle).setDensity(density);
+            //cout << "2. " << i << ": " << particle->getDensity() << endl;
+            neighbors.push_back(findNeighs);
         }
 
+        //second iteration of particles and only their neighbors
 
-        for(int j = 0; j < particles->size(); j++){
-            Particle *particle = particles->at(j);
-            Vector3f gravityForce(0, particle->getDensity() * GRAVITY, 0);
-            double pressure = 0;
-            Vector3f viscosityForce;
-            double pressureJ = particle->getPressure();
-            //vector<neighbourAndDist * > currNeighs = neighbours[j];
+        for(int i = 0; i < particles->size(); i++){
+            //cout << "3. " << i << ": " << neighbors[i][0]->getDensity() << endl;
+            Particle *particle = particles->at(i);
+            //cout << "1. " << i << ": " << particle->getDensity() << endl;
+            Vector3f position = particle->getPosition();
+            Vector3f velocity = particle->getVelocity();
+            maxD = max(maxD, particle->getDensity());
+            minD = min(minD, particle->getDensity());
 
-            for(int k = 0; k < particles->size(); k++){//currNeighs.size(); k++){
-                Particle *tempParticle = particles->at(k);// currNeighs[k]->p;
-                double tempMass = tempParticle->getMass();
-                double tempDens = tempParticle->getDensity();
-                double dist = particle->getDistance(*tempParticle);
-                if(dist < H){
-
-                    //Pressure
-                    double kernDerive = particle->getKernDerive(dist);
-                    //cout << kernDerive << endl;
-                    double pressureK = tempParticle->getPressure();
-                    //cout << tempDens << endl;
-                    pressure += (pressureJ + pressureK) / 2 * tempMass / tempDens * kernDerive;
-                    //Viscosity
-                    double kernSecond = particle->getKernSecond(dist);
-                    viscosityForce += (tempParticle->getVelocity() - particle->getVelocity()) * tempMass / tempDens * kernSecond;
+            for(int j = -RADIUS; j < RADIUS; j++){
+                for(int k = -RADIUS; k < RADIUS; k++){
+                    if (particle->getDistance(position + Vector3f(j, 0, 0) + Vector3f(0, k, 0)) < RADIUS) {
+                        if(abs(velocity.x()) > 20 || abs(velocity.y()) > 20 || abs(velocity.z()) > 20 ){
+                            m[position.x() + j][position.y()+ k].r = 1.0;
+                            m[position.x() + j][position.y() + k].g = 0;
+                            m[position.x() + j][position.y() + k].b = 0;
+                        }else {
+                            m[position.x() + j][position.y()+ k].r = 0;
+                            m[position.x() + j][position.y() + k].g = 0;
+                            m[position.x() + j][position.y() + k].b = 1.0;
+                        }
+                        // if(i == 0){
+                        //     m[position.x() + j][position.y()+ k].r = 1.0;
+                        //     m[position.x() + j][position.y() + k].g = 0;
+                        //     m[position.x() + j][position.y() + k].b = 0;
+                        // } else if(i == 1){
+                        //     m[position.x() + j][position.y()+ k].r = 0;
+                        //     m[position.x() + j][position.y() + k].g = 1.0;
+                        //     m[position.x() + j][position.y() + k].b = 0;
+                        // } else if(i == 2){
+                        //     m[position.x() + j][position.y()+ k].r = 0;
+                        //     m[position.x() + j][position.y() + k].g = 0;
+                        //     m[position.x() + j][position.y() + k].b = 1.0;
+                        // }
+                    }
                 }
             }
 
-            pressure *= -1;
+
+            Vector3f viscosityForce = Vector3f::Zero();
+            //double pressure = 0;
+            Vector3f pressureForce = Vector3f::Zero();
+            double pressureJ = particle->calcPressure();
+            //vector<neighbourAndDist * > currNeighs = neighbours[i];
+
+            vector<Particle * > curNeighs = neighbors[i];
+
+            for(int j = 0; j < curNeighs.size(); j++){//currNeighs.size(); j++){
+                Particle *tempParticle = curNeighs[j];// currNeighs[j]->p;
+                //cout << "3. " << i << " " << j << ": " << tempParticle->getDensity() << endl;
+                double tempMass = tempParticle->getMass();
+                double tempDens = tempParticle->getDensity();
+                Vector3f tempVel = tempParticle->getVelocity();
+                double dist = particle->getDistance(*tempParticle);
+
+                //if(dist <= H && i!=j){
+
+                    //Pressure
+                    Vector3f rij = tempParticle->getPosition() - position;
+                    Vector3f kernDerive = particle->getKernDerive(dist, rij);
+                    //cout << kernDerive << endl;
+                    double pressureK = tempParticle->calcPressure();
+                    //cout << tempDens << endl;
+                    //pressure += ((pressureJ + pressureK) / 2 )* tempMass / tempDens * kernDerive;
+                    //pressure += tempMass * (pressureJ + pressureK) / (2 * tempDens) * kernDerive;
+                    pressureForce += tempMass * (pressureJ + pressureK) / (2 * tempDens) * kernDerive;
+
+                    //Viscosity
+                    double kernSecond = particle->getKernSecond(dist);
+
+                    viscosityForce += (tempVel - velocity) * tempMass / tempDens * kernSecond;
+               // }
+
+            }
+
+            pressureForce *= -1;
+
             viscosityForce *= VISC;
 
-
-            Vector3f pressureForce(pressure, pressure, pressure);
+            Vector3f gravityForce(0, particle->getDensity() * GRAVITY, 0);
+            //Vector3f pressureForce(0, pressure, 0);//pressure);
             //cout << "pForce: " << pressureForce << endl;
             //cout << "glForce: " << gravityForce << endl;
             //cout << "vForce: " << viscosityForce << endl;
@@ -117,35 +207,29 @@ void Scene::render(){
             //cout << "totalForce: " << totalForce << endl;
             Vector3f acceleration = totalForce/particle->getDensity();
             //cout << "1. " << particle->getVelocity() << endl;
-            Vector3f velocity = particle->getVelocity() + DELTAT * acceleration;
+            velocity = velocity + DELTAT * acceleration;  //maybe implement some kind of terminal velocity?
             //cout << "2. " << velocity << endl;
 
-            if((particle->getPosition().x() < 50) || (particle->getPosition().y() < 50) || (particle->getPosition().x() > 600) || (particle->getPosition().y() > 450) ){
-                    velocity *= -0.7;
+            position = position + DELTAT * velocity;
+            //cout << "Original: " << particle->getPosition() << endl;
+            //cout << "New: " << position << endl;
+
+            //cout << particle->getVelocity().z() << endl;
+
+            if((position.x() - RADIUS <= LEFT) || (position.y() - RADIUS <= BOTTOM) || (position.x() + RADIUS >= RIGHT) || (position.y() + RADIUS >= TOP)){
+                    velocity *= -0.4;
+                    while((position.x() - RADIUS <= LEFT) || (position.y() - RADIUS <= BOTTOM) || (position.x() + RADIUS >= RIGHT) || (position.y() + RADIUS >= TOP)){
+                        position = position + DELTAT * velocity;
+                    }
+                    //cout << "NEW: " << position << endl << endl;
                 //cout << "2. " << velocity << endl;
             }
 
+            //if((position.x() > 0) && (position.y() > 0) && (position.x() < HEIGHT) && (position.y() < WIDTH)){
 
-            Vector3f position = particle->getPosition() + DELTAT * velocity;
-            //cout << "Original: " << particle->getPosition() << endl;
-            //cout << "New: " << position << endl;
             particle->setPosition(position);
-
-
-
-            if((position.x() > 0) && (position.y() > 0) && (position.x() < 640) && (position.y() < 480)){
-                for(int k = -RADIUS; k < RADIUS; k++){
-                    for(int l = -RADIUS; l < RADIUS; l++){
-                        if (particle->getDistance(particle->getPosition() + Vector3f(k, 0, 0) + Vector3f(0, l, 0)) < RADIUS) {
-                            m[position.x() + k][position.y()+ l].r = 0;
-                            m[position.x() + k][position.y() + l].g = 0;
-                            m[position.x() + k][position.y() + l].b = 1.0;
-                        }
-                    }
-                }
-
-                particle->setVelocity(velocity);
-            }
+            particle->setVelocity(velocity);
+           // }
         }
 
             //std::pair<std::map<char, int>::iterator, bool> ret;
@@ -159,8 +243,27 @@ void Scene::render(){
             //}
         //}
         //if(!particles->empty())
+            for(int i = LEFT; i < RIGHT; i ++){
+                m[i][BOTTOM].r = 0;
+                m[i][BOTTOM].g = 0;
+                m[i][BOTTOM].b = 0;
+                m[i][TOP].r = 0;
+                m[i][TOP].g = 0;
+                m[i][TOP].b = 0;
+            }
+            for(int i = BOTTOM; i < TOP; i++){
+                m[LEFT][i].r = 0;
+                m[LEFT][i].g = 0;
+                m[LEFT][i].b = 0;
+                m[RIGHT][i].r = 0;
+                m[RIGHT][i].g = 0;
+                m[RIGHT][i].b = 0;
+            }
+
             film->saveImage(m);
     }
+    cout << maxD << endl;
+    cout << minD << endl;
 }
 
 
@@ -170,6 +273,7 @@ Particle::Particle(double m, Vector3f p, Vector3f v){
     mass = m;
     position = p;
     velocity = v;
+    density = 0;
 }
 
 double Particle::getDensity(){
@@ -219,25 +323,32 @@ double Particle::getDistance(Vector3f v){
     return sqrt(x + y + z);
 }
 
-double Particle::getPressure(){
-    return GASCONSTANT * ( pow(density/ RESTDENSITY, 7) - 1 );
+double Particle::calcPressure(){
+    //return STIFFNESS * ( pow(density/ IDEALDENSITY, 7) - 1 );
+    return STIFFNESS * (density - IDEALDENSITY);
 }
 
 double Particle::getKernel(double r){
     //return exp(-4 * pow(r / H, 2));  //Gaussian Kernel form (from intel)
-    double  q = r / H;
-    return pow((1 - pow(q,2)) , 3);
+    //double  q = r / H;
+    //return pow((1 - pow(q,2)) , 3);
+    double c = 315 / (64 * M_PI * pow((double)H, 9.0));
+    return c * pow((H * H - r * r), 3);
 }
 
-double Particle::getKernDerive(double r){
-    double q = r / H;
+Vector3f Particle::getKernDerive(double r, Vector3f rij){
+    //double q = r / H;
     //return -8 * q  * exp(-4 * pow(q, 2));
-    return -6 * q * pow((1 - pow(q, 2)), 2);
+    //return -6 * q * pow((1 - pow(q, 2)), 2);
+    double c = -45 / (M_PI * pow((double) H, 6.0));
+    return c * rij / r * (pow(H - r, 2));
 }
 
 double Particle::getKernSecond(double r){
 //8 e^(-4 q^2) (-1+8 q^2)
-    double q = r / H;
+    //double q = r / H;
     //return 8 * exp(-4 * pow(q, 2) * (-1 + 8 * pow(q, 2)));
-    return -6 * (5 * pow(q, 4) - 6 * pow(q, 2) + 1);
+   // return -6 * (5 * pow(q, 4) - 6 * pow(q, 2) + 1);
+    double c = 45 / (M_PI * pow((double)H, 6.0));
+    return c * (H - r);
 }
