@@ -12,6 +12,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctime>
+#include <iostream>
+#include <fstream>
+#include <cstring>
+
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <sys/time.h>
+#endif
+
+#include <GLUT/glut.h>
+#include <OpenGL/glu.h>
+
+#include <time.h>
+#include <math.h>
 
 
 #define _USE_MATH_DEFINES
@@ -28,15 +43,24 @@
 // #define RADIUS 4
 
 #define MAXINITPART 1
-#define MASS 0.02
+#define MASS 0.002
 #define BPP 24
-#define H 5 //0.0625
+#define H 0.25//0.0625
 #define GRAVITY -10
-#define IDEALDENSITY 10
-#define STIFFNESS 3.5
-#define VISC 3.5
-#define DELTAT 0.1
-#define RADIUS 4
+#define IDEALDENSITY 3.5
+#define STIFFNESS 0.2//0.4
+#define VISC 1
+#define DELTAT 0.01
+#define RADIUS 0.01
+
+
+#define LEFT -0.5
+#define TOP 0.7
+#define RIGHT 0.5
+#define BOTTOM -0.6
+#define WIDTH 800
+#define HEIGHT 800
+#define EPISILON 3
 
 
 
@@ -46,6 +70,8 @@ using namespace std;
 class Particle;
 class Film;
 class Scene;
+class Viewport;
+
 
 typedef struct{
     double r;
@@ -66,11 +92,13 @@ public:
     void init();
     void render();
 
+
 private:
     Film *film;
     int maxParts;
     double timeStep;
     double step;
+    double fRand(double fMin, double fMax);
 };
 
 
@@ -105,4 +133,9 @@ public:
 private:
     int width, height, count;
     string name;
+};
+
+class Viewport {
+  public:
+    int w, h; // width and height
 };
