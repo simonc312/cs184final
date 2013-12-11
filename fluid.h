@@ -15,6 +15,7 @@
 #include <iostream>
 #include <fstream>
 #include <cstring>
+#include <omp.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -42,26 +43,46 @@
 // #define DELTAT 0.2
 // #define RADIUS 4
 
+// #define MAXINITPART 1
+// #define MASS 0.2// 0.002
+// #define BPP 24
+// #define H 0.25//0.0625
+// #define GRAVITY -20
+// #define IDEALDENSITY 250//3.5
+// #define STIFFNESS 500//0.2//0.4
+// #define VISC 20//1
+// #define DELTAT 0.1//0.01
+// #define RADIUS 4//0.01
+
 #define MAXINITPART 1
-#define MASS 0.002
+#define MASS 0.005
 #define BPP 24
-#define H 0.25//0.0625
-#define GRAVITY -10
-#define IDEALDENSITY 3.5
-#define STIFFNESS 0.2//0.4
-#define VISC 1
-#define DELTAT 0.01
-#define RADIUS 0.01
+#define H 20 //0.0625
+#define GRAVITY -20
+#define IDEALDENSITY 10
+#define STIFFNESS 3.5
+#define VISC 3.5
+#define DELTAT 0.2
+#define RADIUS 4
+#define SRADIUS 0.01 // RADIUS / (WIDTH/2)
 
 
-#define LEFT -0.5
-#define TOP 0.7
-#define RIGHT 0.5
-#define BOTTOM -0.6
+
+#define LEFT 20//-0.5
+#define TOP 750// 0.7
+#define RIGHT 750//0.5
+#define BOTTOM 300//-0.6
+#define FRONT -25
+#define BACK -150
 #define WIDTH 800
 #define HEIGHT 800
+#define LENGTH 800
 #define EPISILON 3
 
+
+//pos: 385.098
+// 718.953
+// -54.3848
 
 
 using namespace Eigen;
@@ -99,6 +120,7 @@ private:
     double timeStep;
     double step;
     double fRand(double fMin, double fMax);
+    double convert(double point, double comp);
 };
 
 

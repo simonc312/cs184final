@@ -15,8 +15,16 @@ void myReshape(int w, int h) {
   glViewport (0,0,viewport.w,viewport.h);
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
-  gluPerspective (60, (float)w/(float)h, 1, 50);
-  //glOrtho(0, WIDTH, 0, HEIGHT, -1, 1);
+  gluPerspective (60, (float)w/(float)h, 0.01f, (float)LENGTH);
+  // glTranslatef(0.0, 100.0, 0.0);
+  // glRotatef(90.0, 0.0, 1.0, 0.0);
+
+  //glOrtho(0, WIDTH, 0, HEIGHT, -1.0, LENGTH);
+
+  //glMatrixMode(GL_MODELVIEW);
+  //glLoadIdentity();
+          // gluLookAt (100.0, 0.0, -3.0, 0.0, 0.0, -5.0 , 1.0, 0.0, 0.0);
+
 }
 
 //****************************************************
@@ -37,11 +45,12 @@ void myDisplay() {
   glMatrixMode(GL_MODELVIEW);                   // indicate we are specifying camera transformations
   glLoadIdentity();                     // make sure transformation is "zero'd"
   // Start drawing
+   //gluLookAt (0.0, 0.0, 0.0, 0.0, 0.0, -1.0 , 1.0, 0.0, 0.0);
 
     GLfloat diffuse0[]={0.2, 0.2, 0.2, 1.0};
     GLfloat ambient0[]={0.1, 0.1, 0.1, 1.0};
     GLfloat specular0[]={0.6, 0.6, 0.6, 1.0};
-    GLfloat light0_pos[]={1.0, 1.0, -1.0, 0.0};
+    GLfloat light0_pos[]={1.0, 1.0, -0.5, 0.0};
 
     glEnable(GL_LIGHT0);
     glLightfv(GL_LIGHT0, GL_POSITION, light0_pos);
@@ -50,7 +59,7 @@ void myDisplay() {
     glLightfv(GL_LIGHT0, GL_SPECULAR, specular0);
 
     glEnable(GL_LIGHT1);
-    GLfloat light1_pos[]={-3.0, -3.0, 4.0, 0.0};
+    GLfloat light1_pos[]={-3.0, 0.0, 4.0, 1.0};
 
     glLightfv(GL_LIGHT1, GL_POSITION, light1_pos);
     glLightfv(GL_LIGHT1, GL_AMBIENT, ambient0);
@@ -58,9 +67,9 @@ void myDisplay() {
     glLightfv(GL_LIGHT1, GL_SPECULAR, specular0);
   glPushMatrix(); // put current matrix on stack
 
-    GLfloat ambient[] = {0.2, 0.2, 0.2, 1.0};
-    GLfloat diffuse[] = {0.2, 0.5, 1.0, 1.0};
-    GLfloat specular[] = {1.0, 1.0, 1.0, 1.0};
+    GLfloat ambient[] = {0.2, 0.2, 0.2, 0.6};
+    GLfloat diffuse[] = {0.2, 0.5, 1.0, 0.6};
+    GLfloat specular[] = {1.0, 1.0, 1.0, 0.6};
     GLfloat shine = 100.0;
 
     glMaterialfv(GL_FRONT, GL_AMBIENT, ambient);

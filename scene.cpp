@@ -28,12 +28,15 @@ void Scene::init(){
         for(int i= 0 ; i < maxParts; i ++){
             // int x = rand() % 50 + WIDTH/ 2 - 25;//(RIGHT - LEFT - RADIUS)) + LEFT + RADIUS;
             // int y = rand() % 50 + HEIGHT - 100; //(TOP-BOTTOM - RADIUS)) + BOTTOM + RADIUS ;
-            double x = fRand(-0.1, 0.1);
-            double y = fRand(0.5, 0.6);
-            double z = fRand(-1.1, -1.6);
-            // double x = fRand(300.0, 350.0);
-            // double y = fRand(200.0, 275.0);
-            // double z = fRand(20.0, 30.0);
+            // double x = fRand(-0.1, 0.1);
+            // double y = fRand(0.5, 0.6);
+            // double z = fRand(-1.1, -1.6);
+            // double x = fRand(WIDTH/2 - 25,WIDTH/2 + 25);
+            // double y = fRand(HEIGHT-175, HEIGHT-125);
+            // double z = fRand(-30, -35);
+            double x = fRand(WIDTH/2 - 25,WIDTH/2 + 25);
+            double y = fRand(400, 450);
+            double z = fRand(-30, -35);
             Vector3f pos(x, y, z);
             //std::pair<std::map<char, int>::iterator, bool> ret;
             //ret = positions.insert(std::pair<Vector3f, bool>(pos, true));
@@ -101,21 +104,72 @@ void Scene::render(){
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);               // clear the color buffer
         glMatrixMode(GL_MODELVIEW);                   // indicate we are specifying camera transformations
         glLoadIdentity();
-        vector<vector<Color> > m = vector<vector<Color> > (WIDTH, vector<Color>(HEIGHT, colour));
+        gluLookAt(0.0, 1.0, -0.25, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0 );
+        // if(t % 5 == 0) {
+        //     init();
+        // }
+
+        //Draw the boundaries
+        glDisable(GL_LIGHTING);
+
+        glBegin(GL_QUADS); //bottom
+                glColor3f(1.0, 0.0, 0.0);
+            glVertex3d(convert(LEFT, WIDTH), convert(BOTTOM, HEIGHT), convert(FRONT, LENGTH));
+            glVertex3d(convert(RIGHT, WIDTH), convert(BOTTOM, HEIGHT), convert(FRONT, LENGTH));
+            glVertex3d(convert(RIGHT, WIDTH), convert(BOTTOM, HEIGHT), convert(BACK, LENGTH));
+            glVertex3d(convert(LEFT, WIDTH), convert(BOTTOM, HEIGHT), convert(BACK, LENGTH));
+        glEnd();
+        glEnable(GL_LIGHTING);
+        // // glBegin(GL_QUADS); //top
+        // //     glVertex3d(convert(LEFT, WIDTH), convert(TOP, HEIGHT), convert(FRONT, LENGTH));
+        // //     glVertex3d(convert(RIGHT, WIDTH), convert(TOP HEIGHT), convert(FRONT, LENGTH));
+        // //     glVertex3d(convert(RIGHT, WIDTH), convert(TOP, HEIGHT), convert(BACK, LENGTH));
+        // //     glVertex3d(convert(LEFT, WIDTH), convert(TOP, HEIGHT), convert(BACK, LENGTH));
+        // // glEnd();
+
+        // glBegin(GL_QUADS); //left
+        //         // glColor3f(0.0, 1.0, 0.0);
+        //     glVertex3d(convert(LEFT, WIDTH), convert(BOTTOM, HEIGHT), convert(FRONT, LENGTH));
+        //     glVertex3d(convert(LEFT, WIDTH), convert(BOTTOM, HEIGHT), convert(BACK, LENGTH));
+        //     glVertex3d(convert(LEFT, WIDTH), convert(TOP, HEIGHT), convert(BACK, LENGTH));
+        //     glVertex3d(convert(LEFT, WIDTH), convert(TOP, HEIGHT), convert(FRONT, LENGTH));
+        // glEnd();
+        // glBegin(GL_QUADS); //right
+        //     glVertex3d(convert(RIGHT, WIDTH), convert(BOTTOM, HEIGHT), convert(FRONT, LENGTH));
+        //     glVertex3d(convert(RIGHT, WIDTH), convert(TOP, HEIGHT), convert(FRONT, LENGTH));
+        //     glVertex3d(convert(RIGHT, WIDTH), convert(TOP, HEIGHT), convert(BACK, LENGTH));
+        //     glVertex3d(convert(RIGHT, WIDTH), convert(BOTTOM, HEIGHT), convert(BACK, LENGTH));
+        // glEnd();
+        // glBegin(GL_QUADS); //back
+        //     glVertex3d(convert(LEFT, WIDTH), convert(BOTTOM, HEIGHT), convert(BACK, LENGTH));
+        //     glVertex3d(convert(RIGHT, WIDTH), convert(BOTTOM, HEIGHT), convert(BACK, LENGTH));
+        //     glVertex3d(convert(RIGHT, WIDTH), convert(TOP, HEIGHT), convert(BACK, LENGTH));
+        //     glVertex3d(convert(LEFT, WIDTH), convert(TOP, HEIGHT), convert(BACK, LENGTH));
+        // glEnd();
+        // glBegin(GL_QUADS); //front
+        //     glVertex3d(convert(LEFT, WIDTH), convert(BOTTOM, HEIGHT), convert(FRONT, LENGTH));
+        //     glVertex3d(convert(RIGHT, WIDTH), convert(BOTTOM, HEIGHT), convert(FRONT, LENGTH));
+        //     glVertex3d(convert(RIGHT, WIDTH), convert(TOP, HEIGHT), convert(FRONT, LENGTH));
+        //     glVertex3d(convert(LEFT, WIDTH), convert(TOP, HEIGHT), convert(FRONT, LENGTH));
+        // glEnd();
+
         //for(int i= 0 ; i < maxParts; i ++){
         vector<vector<Particle * > > neighbors;
         //cout << particles->size() << endl;
         //= vector<vector<Particle * > >(particles->size());
+        #pragma omp for
         for(int i = 0; i < particles->size(); i++){  //for every particle
             //cout << "i: " << i << endl;
             //double density = MASS;
 
             Particle *particle = particles->at(i);
+
             double density = MASS;
             vector<Particle *> findNeighs;
             for(int j = 0; j < particles->size(); j++){  //comparison to all other particles to see if they're close enough to effect the density
                 Particle *tempParticle = particles->at(j);
                 double dist = particle->getDistance(*tempParticle);
+                //cout << j << ": " << dist << endl;
 
                 if (dist <= H && i != j){  //if the particle is close enough, add its mass * kernel to the density
                     //neighbourAndDist * nAD = new neighbourAndDist();
@@ -137,11 +191,12 @@ void Scene::render(){
             //particle->setDensity(density); //(*particle).setDensity(density);
             //cout << "2. " << i << ": " << particle->getDensity() << endl;
             neighbors.push_back(findNeighs);
+            //cout << density << endl;
             particle->setDensity(density);
         }
 
         //second iteration of particles and only their neighbors
-
+        #pragma omp for
         for(int i = 0; i < particles->size(); i++){
             //cout << "3. " << i << ": " << neighbors[i][0]->getDensity() << endl;
             Particle *particle = particles->at(i);
@@ -152,9 +207,22 @@ void Scene::render(){
             // maxD = max(maxD, particle->getDensity());
             // minD = min(minD, particle->getDensity());
             //cout << i << ": " << position << endl;
+
+            //http://stackoverflow.com/questions/17565664/gluproject-and-2d-display
+
+            GLdouble posX, posY, posZ;//3D point
+            posX=convert(position.x(), WIDTH);
+            posY=convert(position.y(), HEIGHT);
+            posZ=convert(position.z(), LENGTH);
+
             glPushMatrix();
-                glTranslated(position.x(), position.y(), position.z());
-                glutSolidSphere(RADIUS, 10, 10);
+                //gluLookAt (100.0, 0.0, -3.0, 0.0, 0.0, -5.0 , 1.0, 0.0, 0.0);
+                //gluLookAt (0.0, 3.0, 1.0, 0.0, 0.0, -1.0 , 0.0, 1.0, 0.0);
+
+                //glTranslated(position.x(), position.y(), position.z());
+                //glTranslated(posX/WIDTH, posY/HEIGHT, posZ/LENGTH);
+                glTranslated(posX, posY, posZ);
+                glutSolidSphere(SRADIUS, 10, 10);
             glPopMatrix();
 
 
@@ -191,37 +259,46 @@ void Scene::render(){
             Vector3f viscosityForce = Vector3f::Zero();
             //double pressure = 0;
             Vector3f pressureForce = Vector3f::Zero();
+            Vector3f surfaceNormal = Vector3f::Zero();
+            double colorField = 0;
             double pressureJ = particle->calcPressure();
             //vector<neighbourAndDist * > currNeighs = neighbours[i];
 
             vector<Particle * > curNeighs = neighbors[i];
             //cout << i << " " << curNeighs.size() << endl;
 
-            for(int j = 0; j < particles->size(); j++){//curNeighs.size(); j++){//currNeighs.size(); j++){
-                Particle *tempParticle = particles->at(j);//curNeighs[j];// currNeighs[j]->p;
+            for(int j = 0; j < curNeighs.size(); j++){//currNeighs.size(); j++){
+                Particle *tempParticle = curNeighs[j];// currNeighs[j]->p;
                 //cout << "3. " << i << " " << j << ": " << tempParticle->getDensity() << endl;
                 double tempMass = tempParticle->getMass();
                 double tempDens = tempParticle->getDensity();
                 Vector3f tempVel = tempParticle->getVelocity();
                 double dist = particle->getDistance(*tempParticle);
 
-                if(dist <= H && i!=j){
 
-                    //Pressure
+                //if(dist <= H && i!=j){
+                    //Color Field
+                    double kern = particle->getKernel(dist);
+                    colorField += tempMass / tempDens * kern;
+
+                    //Pressure and surfaceNormal
                     Vector3f rij = tempParticle->getPosition() - position;
                     Vector3f kernDerive = particle->getKernDerive(dist, rij);
+
+
                     //cout << kernDerive << endl;
                     double pressureK = tempParticle->calcPressure();
                     //cout << tempDens << endl;
                     //pressure += ((pressureJ + pressureK) / 2 )* tempMass / tempDens * kernDerive;
                     //pressure += tempMass * (pressureJ + pressureK) / (2 * tempDens) * kernDerive;
                     pressureForce += tempMass * (pressureJ + pressureK) / (2 * tempDens) * kernDerive;
+                    surfaceNormal += tempMass / tempDens * kernDerive;
 
                     //Viscosity
                     double kernSecond = particle->getKernSecond(dist);
 
                     viscosityForce += (tempVel - velocity) * tempMass / tempDens * kernSecond;
-                }
+                //}
 
             }
 
@@ -229,13 +306,14 @@ void Scene::render(){
 
             viscosityForce *= VISC;
 
+            Vector3f surfaceTension = Vector3f::Zero();
             Vector3f gravityForce(0, particle->getDensity() * GRAVITY, 0);
             //Vector3f pressureForce(0, pressure, 0);//pressure);
-            cout << i << ": ";
-            cout << "pForce: " << pressureForce << endl;
-            //cout << "dens: " << particle->getDensity() << endl;
-             cout << "glForce: " << gravityForce << endl;
-             cout << "vForce: " << viscosityForce << endl;
+            // cout << i << ": ";
+            // cout << "pForce: " << pressureForce << endl;
+            // //cout << "dens: " << particle->getDensity() << endl;
+            //  cout << "glForce: " << gravityForce << endl;
+            //  cout << "vForce: " << viscosityForce << endl;
 
             Vector3f totalForce = gravityForce + pressureForce + viscosityForce;
             //cout << "totalForce: " << totalForce << endl;
@@ -243,20 +321,15 @@ void Scene::render(){
             //cout << "1. " << particle->getVelocity() << endl;
             velocity = velocity + DELTAT * acceleration;  //maybe implement some kind of terminal velocity?
             //cout << "2. " << velocity << endl;
-
             position = position + DELTAT * velocity;
-            //cout << "Original: " << particle->getPosition() << endl;
-            //cout << "New: " << position << endl;
 
-            //cout << particle->getVelocity().z() << endl;
-         //cout << "Here" << endl;
-            if((position.x() - RADIUS <= LEFT) || (position.y() - RADIUS <= BOTTOM) || (position.x() + RADIUS >= RIGHT) || (position.y() + RADIUS >= TOP)){
-                    velocity *= -0.4;
-                    while((position.x() - RADIUS <= LEFT) || (position.y() - RADIUS <= BOTTOM) || (position.x() + RADIUS >= RIGHT) || (position.y() + RADIUS >= TOP)){
-                        position = position + DELTAT * velocity;
-                    }
-                    //cout << "NEW: " << position << endl << endl;
-                //cout << "2. " << velocity << endl;
+            if((position.x() - RADIUS <= LEFT) || (position.y() - RADIUS <= BOTTOM) || (position.x() + RADIUS >= RIGHT) || (position.y() + RADIUS >= TOP) || (position.z() + RADIUS <= BACK) || (position.z() - RADIUS >= FRONT)){
+                    velocity *= -0.3;
+                     //while((position.x() - RADIUS <= LEFT) || (position.y() - RADIUS <= BOTTOM) || (position.x() + RADIUS >= RIGHT) || (position.y() + RADIUS >= TOP) || (position.z() + RADIUS <= BACK) || (position.z() - RADIUS >= FRONT)){
+                         position = position + DELTAT * velocity;
+                     //}
+            //         //cout << "NEW: " << position << endl << endl;
+            //     //cout << "2. " << velocity << endl;
             }
 
             //if((position.x() > 0) && (position.y() > 0) && (position.x() < HEIGHT) && (position.y() < WIDTH)){
@@ -266,33 +339,6 @@ void Scene::render(){
            // }
         }
 
-            //std::pair<std::map<char, int>::iterator, bool> ret;
-            //ret = positions.insert(std::pair<Vector3f, bool>(pos, true));
-            //if(ret.second == true){
-                //Particle *p = new Particle(MASS, pos, Vector3f(0, 0, 0));
-                //particles->push_back(p);
-                //m[x][y].r = 0;
-               // m[x][y].g = 0;
-                //m[x][y].b = 1.0;
-            //}
-        //}
-        //if(!particles->empty())
-            // for(int i = LEFT; i < RIGHT; i ++){
-            //     m[i][BOTTOM].r = 0;
-            //     m[i][BOTTOM].g = 0;
-            //     m[i][BOTTOM].b = 0;
-            //     m[i][TOP].r = 0;
-            //     m[i][TOP].g = 0;
-            //     m[i][TOP].b = 0;
-            // }
-            // for(int i = BOTTOM; i < TOP; i++){
-            //     m[LEFT][i].r = 0;
-            //     m[LEFT][i].g = 0;
-            //     m[LEFT][i].b = 0;
-            //     m[RIGHT][i].r = 0;
-            //     m[RIGHT][i].g = 0;
-            //     m[RIGHT][i].b = 0;
-            // }
         FreeImage_Initialise();
         BYTE* pixels = new BYTE[ 3 * WIDTH * HEIGHT];
 
@@ -323,6 +369,15 @@ double Scene::fRand(double fMin, double fMax)
 {
     double f = (double)rand() / RAND_MAX;
     return fMin + f * (fMax - fMin);
+}
+
+double Scene::convert(double point, double comp){
+    if(point >= comp/2){
+        point = (point - comp/2)/(comp/2);
+    } else{
+        point = (point - comp/2)/(comp/2);
+    }
+    return point;
 }
 
 
