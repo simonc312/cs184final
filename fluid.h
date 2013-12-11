@@ -92,6 +92,7 @@ class Particle;
 class Film;
 class Scene;
 class Viewport;
+class Cubes;
 
 
 typedef struct{
@@ -106,19 +107,30 @@ typedef struct neighbourAndDist{
     double dist;
 } neighbourAndDist;
 
+typedef struct {
+   Vector3f p[3];
+} TRIANGLE;
+
+typedef struct {
+   Vector3f p[8];
+   double val[8];
+} GRIDCELL;
+
+
 class Scene{
 public:
     Scene(int p, double t, double s);
     vector<Particle *> *particles;
-    void init();
+
     void render();
-
-
 private:
     Film *film;
     int maxParts;
     double timeStep;
     double step;
+    void init();
+    void drawBoundaries();
+    void saveImage(int t);
     double fRand(double fMin, double fMax);
     double convert(double point, double comp);
 };
@@ -160,4 +172,10 @@ private:
 class Viewport {
   public:
     int w, h; // width and height
+};
+
+class Cubes {
+public:
+    Vector3f VertexInterp(double isolevel, Vector3f p1, Vector3f p2, double valp1, double valp2);
+    int polygonise(GRIDCELL grid,double isolevel,TRIANGLE *triangles);
 };

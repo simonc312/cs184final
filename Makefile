@@ -12,8 +12,8 @@ RM = /bin/rm -f
 
 all: main
 
-main: main.o scene.o film.o
-	$(CC) $(CFLAGS) main.o scene.o film.o -o main $(LDFLAGS)
+main: main.o scene.o film.o marchingCubes.o
+	$(CC) $(CFLAGS) main.o scene.o film.o marchingCubes.o -o main $(LDFLAGS)
 
 main.o: main.cpp
 	$(CC) -c main.cpp
@@ -23,6 +23,9 @@ scene.o: scene.cpp
 
 film.o: film.cpp
 	$(CC) -c film.cpp
+
+marchingCubes.o: marchingCubes.cpp
+	$(CC) -c marchingCubes.cpp
 
 clean:
 	$(RM) *.o main
