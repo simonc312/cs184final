@@ -16,6 +16,8 @@
 #include <fstream>
 #include <cstring>
 #include <omp.h>
+#include <tr1/unordered_map>
+
 
 #ifdef _WIN32
 #include <windows.h>
@@ -116,11 +118,25 @@ typedef struct {
    double val[8];
 } GRIDCELL;
 
+typedef struct hash_function{
+    size_t operator()(const Vector3f &pos) const
+    {
+        return (((int)pos.x()*73856093) xor ((int)pos.y()*19349663) xor ((int)pos.z()*83492791)) % (2*(100)+1);
+    }
+};
+
+typedef struct
+{
+    bool operator() (const Vector3f &v1, const Vector3f &v2) const { return ((v1 - v2).norm() <= 0.1); }
+} HashKeyEq;
+
+
 
 class Scene{
 public:
     Scene(int p, double t, double s);
     vector<Particle *> *particles;
+    tr1::unordered_map<Vector3f,Particle *, hash_function, HashKeyEq> spatialHashTable;
 
     void render();
 private:

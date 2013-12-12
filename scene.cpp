@@ -1,49 +1,50 @@
 //ffmpg
 #include "fluid.h"
 
+
 Scene::Scene(int p, double t, double s){
     maxParts = p;
     timeStep = t;
     step = s;
     particles = new vector<Particle *>();
+    //spatialHashTable= new tr1::unordered_map<Vector3f,Particle *,hash_function>();
+    spatialHashTable.max_load_factor(1);
     film = new Film(WIDTH, HEIGHT);
     init();
-    //render();
+}
+
+int hash_function(Vector3f pos){
+    return  (((int)pos.x()*73856093) xor ((int)pos.y()*19349663) xor ((int)pos.z()*83492791)) % (2*(100)+1);
 }
 
 void Scene::init(){
     srand(time(NULL));
-        for(int i= 0 ; i < maxParts; i ++){
+    for(int i= 0 ; i < maxParts; i ++){
             // double x = fRand(-0.1, 0.1);
             // double y = fRand(0.5, 0.6);
             // double z = fRand(-1.1, -1.6);
             // double x = fRand(WIDTH/2 - 25,WIDTH/2 + 25);
             // double y = fRand(HEIGHT-175, HEIGHT-125);
             // double z = fRand(-30, -35);
-            double x = fRand(WIDTH/2 - 25,WIDTH/2 + 25);
-            double y = fRand(400, 450);
-            double z = fRand(-80, -125);
-            Vector3f pos(x, y, z);
-            Particle *p = new Particle(MASS, pos, Vector3f(0, 0, 0));
-            particles->push_back(p);
-        }
+        double x = fRand(WIDTH/2 - 25,WIDTH/2 + 25);
+        double y = fRand(400, 450);
+        double z = fRand(-80, -125);
+        Vector3f pos(x, y, z);
+        Particle *p = new Particle(MASS, pos, Vector3f(0, 0, 0));
+        //postition partitioned by width of grid cube = support radius H
+        spatialHashTable[pos/H] = p;
+        particles->push_back(p);
+        //cout << "particle " << i << " position: " << pos/H << endl;
+        //cout << "hash returns pos: " << spatialHashTable[pos/(H)] << endl;
+    }
+    cout << spatialHashTable.max_load_factor() << endl;
+    cout << spatialHashTable.load_factor() << endl;
+    cout << spatialHashTable.size() << endl;
+    cout << spatialHashTable.bucket_count() << endl;
+    for(int i = 0; i < particles->size(); i++){ cout << "particle " << i << " with position: " << particles->at(i)->getPosition() /H << " bucket # " << spatialHashTable.bucket(particles->at(i)->getPosition() /H) << endl; }
+    
 }
 
-// This is the hash function taken from the paper by kelager its from email
-// page 47
-// However the unorder map data structure I use from c++ has its own default
-// hash function so I don't know if this will work...somehow make our own custom
-// hash function and embed it to the data structure?
-//int hashFunction(Vector3f pos){
-  //  return (((int)pos.x()*73856093) xor ((int)pos.y()*19349663) xor ((int)pos.z()*83492791)) % getNextPrime(particles//->size());
-//}
-
-//int getNextPrime(int n){
-// this function should return the closest prime number >= n;
-    //it's hard finding code to use on the internet for this function which is
-    //ridiculous
-  //  return 1;
-//}
 
 
 void Scene::render(){
@@ -68,19 +69,44 @@ void Scene::render(){
             Particle *particle = particles->at(i);
             double density = MASS;
             vector<Particle *> findNeighs;
-
-            for(int j = 0; j < particles->size(); j++){  //comparison to all other particles to see if they're close enough to effect the density
-                Particle *tempParticle = particles->at(j);
-                double dist = particle->getDistance(*tempParticle);
-
-                if (dist <= H && i != j){  //if the particle is close enough, add its mass * kernel to the density
+            Vector3f BBmin = ((particle->getPosition()) - Vector3f(H,H,H))/H;
+            Vector3f BBmax = ((particle->getPosition()) + Vector3f(H,H,H))/H;
+            Vector3f discretePos = particle->getPosition();
+            int bucket = spatialHashTable.bucket(discretePos / H);
+            for (std::tr1::__detail::_Node_iterator<std::pair<const Vector3f, Particle*>, false, false> local_it = spatialHashTable.begin(bucket); local_it!= spatialHashTable.end(bucket); ++local_it){
+                Particle * boundingPart = local_it->second;
+                if(boundingPart != particle){
+                    double dist = particle->getDistance(*boundingPart);
                     double kern = particle->getKernel(dist);
-                    density += tempParticle->getMass() * kern;
-                    findNeighs.push_back(tempParticle);
+                    density += boundingPart->getMass() * kern;    
+                    findNeighs.push_back(boundingPart);
                 }
             }
+            //cout << "bb for particle " << i << endl; 
+            //for(double x= BBmin.x(); x<= BBmax.x(); x+=1.0/H){
+              //  for(double y=BBmin.y(); y<= BBmax.y(); y+=1.0/H){
+                //    for(double z=BBmin.z(); z<= BBmax.z(); z+=1.0/H){
+                       // discretePos.x() = x;
+                       // discretePos.y() = y;
+                       // discretePos.z() = z;
+                        //cout << discretePos << endl;
+                       // Particle *boundingPart = spatialHashTable[discretePos];
+                        //cout << boundingPart << endl;
+                       // if(boundingPart == 0){break;}
+                        //cout << "hit" << endl;//no particle at position
+                        //double dist = particle->getDistance(*boundingPart);
+                        //if(dist <= H && particle != boundingPart)
+                        //{   double kern = particle->getKernel(dist);
+                         //   density += boundingPart->getMass() * kern;    
+                         //   findNeighs.push_back(boundingPart);}
+               //     }
+             //   }
+            
+           // }
+            
             neighbors.push_back(findNeighs);
             particle->setDensity(density);
+           // cout << "hello 4" << endl;
         }
 
         //second iteration of particles and only their neighbors
@@ -110,7 +136,7 @@ void Scene::render(){
             double pressureJ = particle->calcPressure();
 
             vector<Particle * > curNeighs = neighbors[i];
-
+            cout << "particle " << i << " num neighbors" << curNeighs.size() << endl;
             for(int j = 0; j < curNeighs.size(); j++){//currNeighs.size(); j++){
 
                 Particle *tempParticle = curNeighs[j];// currNeighs[j]->p;
@@ -174,6 +200,10 @@ void Scene::render(){
             particle->setPosition(newPosition);
             particle->setVelocity(velocity);
         }
+        //reset and update spatial hash table 
+        spatialHashTable.clear();
+        for(int i=0; i< particles -> size();i++){
+            Particle *p = particles->at(i); Vector3f pos = p->getPosition(); spatialHashTable[pos/H]=p;}
         saveImage(t);
 
         glFlush();
