@@ -59,25 +59,23 @@
 #define BPP 24
 #define H 20 //0.0625
 #define GRAVITY -20
-#define IDEALDENSITY 10
-#define STIFFNESS 3.5
-#define VISC 3.5
-#define DELTAT 0.2
+#define IDEALDENSITY 500 //higher makes it more gaslike
+#define STIFFNESS 0.1
+#define VISC 20
+#define DELTAT 0.1
 #define RADIUS 4
 #define SRADIUS 0.01 // RADIUS / (WIDTH/2)
 
-
-
-#define LEFT 20//-0.5
-#define TOP 750// 0.7
-#define RIGHT 750//0.5
-#define BOTTOM 300//-0.6
-#define FRONT -25
-#define BACK -150
+#define LEFT 325//-0.5
+#define RIGHT 475//0.5
+#define BOTTOM 325//-0.6
+#define TOP 475// 0.7
+#define FRONT -325
+#define BACK -475
 #define WIDTH 800
-#define HEIGHT 800
+#define HEIGHT 700
 #define LENGTH 800
-#define EPISILON 3
+#define EPSILON 4
 
 
 //pos: 385.098
@@ -114,6 +112,7 @@ typedef struct {
 typedef struct {
    Vector3f p[8];
    double val[8];
+
 } GRIDCELL;
 
 
@@ -133,6 +132,7 @@ private:
     void saveImage(int t);
     double fRand(double fMin, double fMax);
     double convert(double point, double comp);
+    bool boundary(float & pos, int limit, Vector3f collNorm, Vector3f position, Vector3f velocity, Vector3f &newPosition);
 };
 
 

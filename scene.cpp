@@ -20,9 +20,9 @@ void Scene::init(){
             // double x = fRand(WIDTH/2 - 25,WIDTH/2 + 25);
             // double y = fRand(HEIGHT-175, HEIGHT-125);
             // double z = fRand(-30, -35);
-            double x = fRand(WIDTH/2 - 25,WIDTH/2 + 25);
-            double y = fRand(400, 450);
-            double z = fRand(-80, -125);
+            double x = fRand(460, 465);
+            double y = fRand(425, 460);
+            double z = fRand(-450, -465);
             Vector3f pos(x, y, z);
             Particle *p = new Particle(MASS, pos, Vector3f(0, 0, 0));
             particles->push_back(p);
@@ -51,18 +51,20 @@ void Scene::render(){
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);               // clear the color buffer
         glMatrixMode(GL_MODELVIEW);                   // indicate we are specifying camera transformations
         glLoadIdentity();
-        gluLookAt(0.0, 1.0, -0.25, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0 );
+        gluLookAt(0.0, 0.6, -1.25, 0.0, 0.0, -2.1, 0.0, 1.0, 0.0);
+        //gluLookAt(-0.25, 0.5, -1, 0.25, 0.0, -1, 1.0, 0.0, 0.0 );
         // if(t % 5 == 0) {
         //     init();
         // }
 
         //Draw the boundaries
+       // if (t < 100)
         drawBoundaries();
 
         vector<vector<Particle * > > neighbors;
 
         //density calculations
-        #pragma omp for
+        #pragma omp parallel for
         for(int i = 0; i < particles->size(); i++){  //for every particle
 
             Particle *particle = particles->at(i);
@@ -84,7 +86,7 @@ void Scene::render(){
         }
 
         //second iteration of particles and only their neighbors
-        #pragma omp for
+        #pragma omp parallel for
         for(int i = 0; i < particles->size(); i++){
             Particle *particle = particles->at(i);
             Vector3f position = particle->getPosition();
@@ -149,30 +151,183 @@ void Scene::render(){
             //cout << "totalForce: " << totalForce << endl;
             Vector3f acceleration = totalForce/particle->getDensity();
             //cout << "1. " << particle->getVelocity() << endl;
-            velocity = velocity + DELTAT * acceleration;  //maybe implement some kind of terminal velocity?
+            Vector3f newVelocity = velocity + DELTAT * acceleration;  //maybe implement some kind of terminal velocity?
             //cout << "2. " << velocity << endl;
             Vector3f newPosition = position + DELTAT * velocity;
 
             //Boundary check next position
-            bool bounce = false;
-             while((newPosition.x() - RADIUS <= LEFT) || (newPosition.y() - RADIUS <= BOTTOM) || (newPosition.x() + RADIUS >= RIGHT) || (newPosition.y() + RADIUS >= TOP) || (newPosition.z() + RADIUS <= BACK) || (newPosition.z() - RADIUS >= FRONT)){
-                bounce = true;
-                velocity *= 0.9;
-                newPosition = position + DELTAT * velocity;
-             }
-             if(bounce) velocity *= -1;
-
-            // if(newPosition.y() - RADIUS <= BOTTOM){
-            //     int boundTime = (BOTTOM - position.y()) / velocity;
-            //     Vector3f collision = position + boundTime * velocity;
-            //     Vector3f collNorm(collision.x(), 1, collision.z()).normalized();
-            //     double penDist = newPosition.dist(collision);
-            //     newPosition = newPosition + penDist * collNorm;
-            //     velocity = velocity - 0.3 * (velocity.dot(collNorm)) * collNorm;
+            // int c = 0.1;
+            // double dist = abs(position.x() - LEFT - EPSILON);
+            // if(dist < EPSILON ){
+            //     Vector3f normal(1, 0, 0);
+            //     double incidentAngle = velocity.dot(normal);
+            //     if(incidentAngle < 0){
+            //         //double reflectAngle = incidentAngle * 1.1;
+            //         newVelocity = newVelocity * -0.3;
+            //         newVelocity = newVelocity + c * (2 * EPSILON - dist) * normal;
+            //         newPosition = position + DELTAT * newVelocity;
+            //     }
+            // }
+            // dist = abs(position.x() - RIGHT + EPSILON);
+            // if(dist < EPSILON ){
+            //     Vector3f normal(-1, 0, 0);
+            //     double incidentAngle = velocity.dot(normal);
+            //     if(incidentAngle < 0){
+            //         //double reflectAngle = incidentAngle * 1.1;
+            //         newVelocity = velocity * -0.3;
+            //         newVelocity = newVelocity + c * (2 * EPSILON - dist) * normal;
+            //         newPosition = position + DELTAT * newVelocity;
+            //     }
+            // }
+            // dist = abs(position.y() - BOTTOM - EPSILON);
+            // if(dist < EPSILON ){
+            //     Vector3f normal(0, 1, 0);
+            //     double incidentAngle = velocity.dot(normal);
+            //     if(incidentAngle < 0){
+            //         //double reflectAngle = incidentAngle * 1.1;
+            //         newVelocity = velocity * -0.3;
+            //         newVelocity = newVelocity + c * (2 * EPSILON - dist) * normal;
+            //         newPosition = position + DELTAT * newVelocity;
+            //     }
+            // }
+            // dist = abs(position.y() - TOP + EPSILON);
+            // if(dist < EPSILON ){
+            //     Vector3f normal(0, -1, 0);
+            //     double incidentAngle = velocity.dot(normal);
+            //     if(incidentAngle < 0){
+            //         //double reflectAngle = incidentAngle * 1.1;
+            //         newVelocity = velocity * -0.3;
+            //         newVelocity = newVelocity + c * (2 * EPSILON - dist) * normal;
+            //         newPosition = position + DELTAT * newVelocity;
+            //     }
+            // }
+            // dist = abs(position.z() - FRONT + EPSILON);
+            // if(dist < EPSILON ){
+            //     Vector3f normal(0, 0, -1);
+            //     double incidentAngle = velocity.dot(normal);
+            //     if(incidentAngle < 0){
+            //         //double reflectAngle = incidentAngle * 1.1;
+            //         newVelocity = velocity * -0.3;
+            //         newVelocity = newVelocity + c * (2 * EPSILON - dist) * normal;
+            //         newPosition = position + DELTAT * newVelocity;
+            //     }
+            // }
+            // dist = abs(position.z() - BACK - EPSILON);
+            // if(dist < EPSILON ){
+            //     Vector3f normal(0, 0, 1);
+            //     double incidentAngle = velocity.dot(normal);
+            //     if(incidentAngle < 0){
+            //         //double reflectAngle = incidentAngle * 1.1;
+            //         newVelocity = velocity * -0.3;
+            //         newVelocity = newVelocity + c * (2 * EPSILON - dist) * normal;
+            //         newPosition = position + DELTAT * newVelocity;
+            //     }
             // }
 
+
+            // bool bounce = false;
+            //  while((newPosition.x() - RADIUS <= LEFT) || (newPosition.y() - RADIUS <= BOTTOM) || (newPosition.x() + RADIUS >= RIGHT) || (newPosition.y() + RADIUS >= TOP) || (newPosition.z() + RADIUS <= BACK) || (newPosition.z() - RADIUS >= FRONT)){
+            //     bounce = true;
+            //     newVelocity *= 0.9;
+            //     newPosition = position + DELTAT * newVelocity;
+            //  }
+             //if(bounce) velocity *= -1;
+
+            bool bound = false;
+            double cr = 0;
+            Vector3f collNorm = Vector3f::Zero();
+            //if(t < 100 ){
+                if(newPosition.y() - EPSILON < BOTTOM){
+                    double boundTime = (position.y() - (BOTTOM)) / velocity.norm();
+                    //cout << boundTime << endl;  //maybe boundTime = min(boundTime, DELTA);
+                    Vector3f collision = position + boundTime * velocity;
+                    // cout << "collision: " << collision << endl;
+                    collNorm << 0, 1, 0;
+                    double penDist = (newPosition - collision).norm();
+                    //cout << penDist << endl;
+                    // cout << "1. " << newPosition << endl;
+                    newPosition = newPosition + penDist * collNorm;
+                    newVelocity *= -0.01;
+                    // velocity = velocity - ( 1 + cr) * (velocity.dot(collNorm) * collNorm);
+                    // cout << "2. " << newPosition << endl;
+                    // bound = true;
+                    // velocity *= -0.3;
+                    // while(newPosition.y() - EPSILON < BOTTOM){
+                    //     newPosition = newPosition + velocity * DELTAT;
+                    // }
+                }
+                if(newPosition.y() + EPSILON > TOP){
+                    double boundTime = (-position.y() + (TOP)) / velocity.norm();
+                    Vector3f collision = position + boundTime * velocity;
+                    collNorm << 0, -1, 0;
+                    double penDist = (newPosition - collision).norm();
+                    newPosition = newPosition + penDist * collNorm;
+                    // velocity = velocity - ( 1 + cr) * (velocity.dot(collNorm) * collNorm);
+                    bound = true;
+                    // velocity *= -0.3;
+                    // while(newPosition.y() + EPSILON > TOP){
+                    //     newPosition = newPosition + velocity * DELTAT;
+                    // }
+                }
+                if(newPosition.x() - EPSILON < LEFT){
+                    double boundTime = (position.x() - (LEFT)) / velocity.norm();
+                    Vector3f collision = position + boundTime * velocity;
+                    collNorm << 1, 0, 0;
+                    double penDist = (newPosition - collision).norm();
+                    newPosition = newPosition + penDist * collNorm;
+                    // velocity = velocity - ( 1 + cr) * (velocity.dot(collNorm) * collNorm);
+                    bound = true;
+                    // velocity *= -0.3;
+                    // while(newPosition.x() + EPSILON < LEFT){
+                    //     newPosition = newPosition + velocity * DELTAT;
+                    // }
+                }
+                if(newPosition.x() + EPSILON > RIGHT){
+                    double boundTime = (-position.x() + (RIGHT)) / velocity.norm();
+                    Vector3f collision = position + boundTime * velocity;
+                    collNorm << -1, 0, 0;
+                    double penDist = (newPosition - collision).norm();
+                    newPosition = newPosition + penDist * collNorm;
+                    // velocity = velocity - ( 1 + cr) * (velocity.dot(collNorm) * collNorm);
+                    bound = true;
+                    // velocity *= -0.3;
+                    // while(newPosition.x() - EPSILON > RIGHT){
+                    //     newPosition = newPosition + velocity * DELTAT;
+                    // }
+                }
+                if(newPosition.z() - EPSILON < BACK){
+                    double boundTime = (position.z() - (BACK)) / velocity.norm();
+                    Vector3f collision = position + boundTime * velocity;
+                    collNorm << 0, 0, 1;
+                    double penDist = (newPosition - collision).norm();
+                    newPosition = newPosition + penDist * collNorm;
+                    // velocity = velocity - ( 1 + cr) * (velocity.dot(collNorm) * collNorm);
+                    bound = true;
+                    // velocity *= -0.3;
+                    // while(newPosition.z() - EPSILON < BACK){
+                    //     newPosition = newPosition + velocity * DELTAT;
+                    // }
+                }
+                if(newPosition.z() + EPSILON > FRONT){
+                    double boundTime = (-position.z() + (FRONT)) / velocity.norm();
+                    Vector3f collision = position + boundTime * velocity;
+                    collNorm << 0, 0, -1;
+                    double penDist = (newPosition - collision).norm();
+                    newPosition = newPosition + penDist * collNorm;
+                    // velocity = velocity - ( 1 + cr) * (velocity.dot(collNorm) * collNorm);
+                    bound = true;
+                    // velocity *= -0.3;
+                    // while(newPosition.z() + EPSILON > FRONT){
+                    //     newPosition = newPosition + velocity * DELTAT;
+                    // }
+
+                }
+                if(bound) {
+                    newVelocity *= -0.3;
+                }
+            //}
             particle->setPosition(newPosition);
-            particle->setVelocity(velocity);
+            particle->setVelocity(newVelocity);
         }
         saveImage(t);
 
@@ -182,49 +337,52 @@ void Scene::render(){
     }
 }
 
+
 void Scene::drawBoundaries(){
         glDisable(GL_LIGHTING);
-
+        glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glBegin(GL_QUADS); //bottom
-            glColor3f(1.0, 0.0, 0.0);
+            glColor4f(0.1, 0.8, 0.6, 0.8);//235/255.0, 244/255.0, 250/255.0, 1.0);
             glVertex3d(convert(LEFT, WIDTH), convert(BOTTOM, HEIGHT), convert(FRONT, LENGTH));
             glVertex3d(convert(RIGHT, WIDTH), convert(BOTTOM, HEIGHT), convert(FRONT, LENGTH));
             glVertex3d(convert(RIGHT, WIDTH), convert(BOTTOM, HEIGHT), convert(BACK, LENGTH));
             glVertex3d(convert(LEFT, WIDTH), convert(BOTTOM, HEIGHT), convert(BACK, LENGTH));
         glEnd();
+        glBegin(GL_QUADS); //top
+            glVertex3d(convert(LEFT, WIDTH), convert(TOP, HEIGHT), convert(FRONT, LENGTH));
+            glVertex3d(convert(RIGHT, WIDTH), convert(TOP, HEIGHT), convert(FRONT, LENGTH));
+            glVertex3d(convert(RIGHT, WIDTH), convert(TOP, HEIGHT), convert(BACK, LENGTH));
+            glVertex3d(convert(LEFT, WIDTH), convert(TOP, HEIGHT), convert(BACK, LENGTH));
+        glEnd();
+        glBegin(GL_QUADS); //left
+                // glColor3f(0.0, 1.0, 0.0);
+            glVertex3d(convert(LEFT, WIDTH), convert(BOTTOM, HEIGHT), convert(FRONT, LENGTH));
+            glVertex3d(convert(LEFT, WIDTH), convert(BOTTOM, HEIGHT), convert(BACK, LENGTH));
+            glVertex3d(convert(LEFT, WIDTH), convert(TOP, HEIGHT), convert(BACK, LENGTH));
+            glVertex3d(convert(LEFT, WIDTH), convert(TOP, HEIGHT), convert(FRONT, LENGTH));
+        glEnd();
+        glBegin(GL_QUADS); //right
+            glVertex3d(convert(RIGHT, WIDTH), convert(BOTTOM, HEIGHT), convert(FRONT, LENGTH));
+            glVertex3d(convert(RIGHT, WIDTH), convert(TOP, HEIGHT), convert(FRONT, LENGTH));
+            glVertex3d(convert(RIGHT, WIDTH), convert(TOP, HEIGHT), convert(BACK, LENGTH));
+            glVertex3d(convert(RIGHT, WIDTH), convert(BOTTOM, HEIGHT), convert(BACK, LENGTH));
+        glEnd();
+        glBegin(GL_QUADS); //back
+            glVertex3d(convert(LEFT, WIDTH), convert(BOTTOM, HEIGHT), convert(BACK, LENGTH));
+            glVertex3d(convert(RIGHT, WIDTH), convert(BOTTOM, HEIGHT), convert(BACK, LENGTH));
+            glVertex3d(convert(RIGHT, WIDTH), convert(TOP, HEIGHT), convert(BACK, LENGTH));
+            glVertex3d(convert(LEFT, WIDTH), convert(TOP, HEIGHT), convert(BACK, LENGTH));
+        glEnd();
+        glBegin(GL_QUADS); //front
+            glVertex3d(convert(LEFT, WIDTH), convert(BOTTOM, HEIGHT), convert(FRONT, LENGTH));
+            glVertex3d(convert(RIGHT, WIDTH), convert(BOTTOM, HEIGHT), convert(FRONT, LENGTH));
+            glVertex3d(convert(RIGHT, WIDTH), convert(TOP, HEIGHT), convert(FRONT, LENGTH));
+            glVertex3d(convert(LEFT, WIDTH), convert(TOP, HEIGHT), convert(FRONT, LENGTH));
+        glEnd();
         glEnable(GL_LIGHTING);
-        // // glBegin(GL_QUADS); //top
-        // //     glVertex3d(convert(LEFT, WIDTH), convert(TOP, HEIGHT), convert(FRONT, LENGTH));
-        // //     glVertex3d(convert(RIGHT, WIDTH), convert(TOP HEIGHT), convert(FRONT, LENGTH));
-        // //     glVertex3d(convert(RIGHT, WIDTH), convert(TOP, HEIGHT), convert(BACK, LENGTH));
-        // //     glVertex3d(convert(LEFT, WIDTH), convert(TOP, HEIGHT), convert(BACK, LENGTH));
-        // // glEnd();
-
-        // glBegin(GL_QUADS); //left
-        //         // glColor3f(0.0, 1.0, 0.0);
-        //     glVertex3d(convert(LEFT, WIDTH), convert(BOTTOM, HEIGHT), convert(FRONT, LENGTH));
-        //     glVertex3d(convert(LEFT, WIDTH), convert(BOTTOM, HEIGHT), convert(BACK, LENGTH));
-        //     glVertex3d(convert(LEFT, WIDTH), convert(TOP, HEIGHT), convert(BACK, LENGTH));
-        //     glVertex3d(convert(LEFT, WIDTH), convert(TOP, HEIGHT), convert(FRONT, LENGTH));
-        // glEnd();
-        // glBegin(GL_QUADS); //right
-        //     glVertex3d(convert(RIGHT, WIDTH), convert(BOTTOM, HEIGHT), convert(FRONT, LENGTH));
-        //     glVertex3d(convert(RIGHT, WIDTH), convert(TOP, HEIGHT), convert(FRONT, LENGTH));
-        //     glVertex3d(convert(RIGHT, WIDTH), convert(TOP, HEIGHT), convert(BACK, LENGTH));
-        //     glVertex3d(convert(RIGHT, WIDTH), convert(BOTTOM, HEIGHT), convert(BACK, LENGTH));
-        // glEnd();
-        // glBegin(GL_QUADS); //back
-        //     glVertex3d(convert(LEFT, WIDTH), convert(BOTTOM, HEIGHT), convert(BACK, LENGTH));
-        //     glVertex3d(convert(RIGHT, WIDTH), convert(BOTTOM, HEIGHT), convert(BACK, LENGTH));
-        //     glVertex3d(convert(RIGHT, WIDTH), convert(TOP, HEIGHT), convert(BACK, LENGTH));
-        //     glVertex3d(convert(LEFT, WIDTH), convert(TOP, HEIGHT), convert(BACK, LENGTH));
-        // glEnd();
-        // glBegin(GL_QUADS); //front
-        //     glVertex3d(convert(LEFT, WIDTH), convert(BOTTOM, HEIGHT), convert(FRONT, LENGTH));
-        //     glVertex3d(convert(RIGHT, WIDTH), convert(BOTTOM, HEIGHT), convert(FRONT, LENGTH));
-        //     glVertex3d(convert(RIGHT, WIDTH), convert(TOP, HEIGHT), convert(FRONT, LENGTH));
-        //     glVertex3d(convert(LEFT, WIDTH), convert(TOP, HEIGHT), convert(FRONT, LENGTH));
-        // glEnd();
+        glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 }
 
 

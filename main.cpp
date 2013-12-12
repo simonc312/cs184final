@@ -31,7 +31,7 @@ void myReshape(int w, int h) {
 // Simple init function
 //****************************************************
 void initScene(){
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f); // Clear to black, fully transparent
+    glClearColor(0.9f, 0.9f, 0.9f, 0.0f); // Clear to black, fully transparent
     myReshape(viewport.w,viewport.h);
 }
 
@@ -68,7 +68,7 @@ void myDisplay() {
   glPushMatrix(); // put current matrix on stack
 
     GLfloat ambient[] = {0.2, 0.2, 0.2, 0.6};
-    GLfloat diffuse[] = {0.2, 0.5, 1.0, 0.6};
+    GLfloat diffuse[] = {0.0, 0.9, 1.0, 0.9};
     GLfloat specular[] = {1.0, 1.0, 1.0, 0.6};
     GLfloat shine = 100.0;
 
@@ -115,8 +115,10 @@ int main(int argc, char* argv[]){
     //default settings: fill, shading
     glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
     glShadeModel(GL_SMOOTH);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    GLfloat global_ambient[] = { 0.2f, 0.5f, 1.0f, 1.0f };
+    GLfloat global_ambient[] = { 0.0f, 0.0f, 0.9f, 1.0f };
     glLightModelfv(GL_LIGHT_MODEL_AMBIENT, global_ambient);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_NORMALIZE);
