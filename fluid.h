@@ -65,13 +65,14 @@
 #define DELTAT 0.1
 #define RADIUS 4
 #define SRADIUS 0.01 // RADIUS / (WIDTH/2)
+#define TENSION 0.07
 
-#define LEFT 320//-0.5
-#define RIGHT 480//0.5
-#define BOTTOM 320//-0.6
-#define TOP 480// 0.7
-#define FRONT -320
-#define BACK -480
+#define LEFT 345//-0.5
+#define RIGHT 455//0.5
+#define BOTTOM 300//-0.6
+#define TOP 500// 0.7
+#define FRONT -345
+#define BACK -455
 #define WIDTH 800
 #define HEIGHT 700
 #define LENGTH 800

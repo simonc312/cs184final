@@ -425,7 +425,7 @@ int triTable[256][16] =
 
    for(i = 0; triTable[cubeindex][i] != -1; i+=3){
       glDisable(GL_LIGHTING);
-      glColor4f(1.0, 0.0, 0.0, 0.3);
+      glColor4f(1.0, 0.0, 0.0, 1.0);
       glBegin(GL_TRIANGLES);
       for(int j = 0; j < 3; j++){
 

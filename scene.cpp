@@ -22,9 +22,12 @@ void Scene::init(){
             // double x = fRand(WIDTH/2 - 25,WIDTH/2 + 25);
             // double y = fRand(HEIGHT-175, HEIGHT-125);
             // double z = fRand(-30, -35);
-            double x = fRand(385, 415);
-            double y = fRand(425, 465);
-            double z = fRand(-385, -415);
+            // double x = fRand(385, 415);
+            // double y = fRand(425, 465);
+            // double z = fRand(-385, -415);
+            double x = fRand(350, 450);
+            double y = fRand(450, 475);
+            double z = fRand(-350, -450);
             Vector3f pos(x, y, z);
             Particle *p = new Particle(MASS, pos, Vector3f(0, 0, 0));
             particles->push_back(p);
@@ -53,7 +56,7 @@ void Scene::render(){
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);               // clear the color buffer
         glMatrixMode(GL_MODELVIEW);                   // indicate we are specifying camera transformations
         glLoadIdentity();
-        gluLookAt(0.0, 0.15, -1.35, 0.0, 0.15, -10.0, 0.0, 1.0, 0.0);
+        gluLookAt(0.0, 0.15, -1.20, 0.0, 0.15, -10.0, 0.0, 1.0, 0.0);
         //gluLookAt(0.0, 0.6, -1.25, .0, 0.0, -2.1, 0.0, 1.0, 0.0);
         // gluLookAt()
         // if(t % 5 == 0) {
@@ -65,6 +68,7 @@ void Scene::render(){
         drawBoundaries();
 
         vector<vector<Particle * > > neighbors;
+        double totalDens = 0;
 
         //density calculations
         #pragma omp parallel for
@@ -80,19 +84,24 @@ void Scene::render(){
 
                 if (dist <= H && i != j){  //if the particle is close enough, add its mass * kernel to the density
                     double kern = particle->getKernel(dist);
+                    //cout << dist << endl;
                     density += tempParticle->getMass() * kern;
                     findNeighs.push_back(tempParticle);
                 }
             }
             neighbors.push_back(findNeighs);
             particle->setDensity(density);
+            totalDens += density;
         }
+        cout << totalDens / particles->size() << endl;
 
         if(march == 1){
 
             int x = (RIGHT - LEFT) / GRID + 1;
             int y = (TOP - BOTTOM)/GRID + 1;
             int z = (abs(BACK - FRONT))/GRID + 1;
+            cout << x << " " << y << " " << z << endl;
+
             Particle * grid[x][y][z];
 
             for(int i = 0; i < x; i++){
@@ -116,6 +125,7 @@ void Scene::render(){
                     }
                 }
             }
+
 
             for(int i = LEFT; i < RIGHT; i += GRID){
                 for(int j = BOTTOM; j < TOP; j += GRID){
@@ -219,7 +229,7 @@ void Scene::render(){
                         // glEnd();
                         // glPolygonMode( GL_FRONT_AND_BACK, GL_FILL);
 
-                        cubes->polygonise(g, 0.005001);
+                        cubes->polygonise(g, totalDens/particles->size());
 
 
 
@@ -263,25 +273,26 @@ void Scene::render(){
                 Vector3f tempVel = tempParticle->getVelocity();
                 double dist = particle->getDistance(*tempParticle);
                 double kern = particle->getKernel(dist);
-                colorField += tempMass / tempDens * kern;
 
-                //Pressure and surfaceNormal
+                //Pressure
                 Vector3f rij = tempParticle->getPosition() - position;
                 Vector3f kernDerive = particle->getKernDerive(dist, rij);
                 double pressureK = tempParticle->calcPressure();
                 pressureForce += tempMass * (pressureJ + pressureK) / (2 * tempDens) * kernDerive;
 
-                surfaceNormal += tempMass / tempDens * kernDerive;
-
                 //Viscosity
                 double kernSecond = particle->getKernSecond(dist);
                 viscosityForce += (tempVel - velocity) * tempMass / tempDens * kernSecond;
-            }
 
+                //Surface Tension
+                surfaceNormal += tempMass / tempDens * kernDerive;
+                colorField += tempMass / tempDens * kernSecond;
+            }
+            // cout << surfaceNormal << endl;
             pressureForce *= -1;
             viscosityForce *= VISC;
 
-            Vector3f surfaceTension = Vector3f::Zero();
+            Vector3f surfaceTension = -TENSION * colorField * surfaceNormal / surfaceNormal.norm();
             Vector3f gravityForce(0, particle->getDensity() * GRAVITY, 0);
             // cout << "pForce: " << pressureForce << endl;
             // //cout << "dens: " << particle->getDensity() << endl;
@@ -290,6 +301,8 @@ void Scene::render(){
 
             //Update next position
             Vector3f totalForce = gravityForce + pressureForce + viscosityForce;
+            if (surfaceNormal.norm() >= 0.00001)
+                totalForce += surfaceTension;
             //cout << "totalForce: " << totalForce << endl;
             Vector3f acceleration = totalForce/particle->getDensity();
             //cout << "1. " << particle->getVelocity() << endl;
@@ -370,18 +383,18 @@ void Scene::render(){
             // bool bounce = false;
             //  while((newPosition.x() - RADIUS <= LEFT) || (newPosition.y() - RADIUS <= BOTTOM) || (newPosition.x() + RADIUS >= RIGHT) || (newPosition.y() + RADIUS >= TOP) || (newPosition.z() + RADIUS <= BACK) || (newPosition.z() - RADIUS >= FRONT)){
             //     bounce = true;
-            //     newVelocity *= 0.9;
+                // newVelocity *= 0.9;
             //     newPosition = position + DELTAT * newVelocity;
             //  }
-             //if(bounce) velocity *= -1;
+             // if(bounce) velocity *= -1;
 
-            bool bound = false;
+            // bool bound = false;
             double c = -0.3;
-            Vector3f collNorm = Vector3f::Zero();
+            // Vector3f collNorm = Vector3f::Zero();
             //if(t < 100 ){
                 if(newPosition.y() - EPSILON < BOTTOM){
                     // double boundTime = (position.y() - (BOTTOM)) / velocity.norm();
-                    // //cout << boundTime << endl;  //maybe boundTime = min(boundTime, DELTA);
+                    // cout << boundTime << endl;  //maybe boundTime = min(boundTime, DELTA);
                     // Vector3f collision = position + boundTime * velocity;
                     // // cout << "collision: " << collision << endl;
                     // collNorm << 0, 1, 0;
@@ -398,78 +411,92 @@ void Scene::render(){
                     //     newPosition = newPosition + velocity * DELTAT;
                     // }
                     double d = abs(newPosition.y() - BOTTOM);
-                    newPosition = Vector3f(newPosition.x(), newPosition.y() + d, newPosition.z());
+                    newPosition = Vector3f(newPosition.x(), BOTTOM + EPSILON, newPosition.z());
                     newVelocity = Vector3f(newVelocity.x(), newVelocity.y() * c, newVelocity.z());
                 }
                 if(newPosition.y() + EPSILON > TOP){
-                    double boundTime = (-position.y() + (TOP)) / velocity.norm();
-                    Vector3f collision = position + boundTime * velocity;
-                    collNorm << 0, -1, 0;
-                    double penDist = (newPosition - collision).norm();
-                    newPosition = newPosition + penDist * collNorm;
-                    // velocity = velocity - ( 1 + cr) * (velocity.dot(collNorm) * collNorm);
-                    bound = true;
+                    // double boundTime = (-position.y() + (TOP)) / velocity.norm();
+                    // Vector3f collision = position + boundTime * velocity;
+                    // collNorm << 0, -1, 0;
+                    // double penDist = (newPosition - collision).norm();
+                    // newPosition = newPosition + penDist * collNorm;
+                    // // velocity = velocity - ( 1 + cr) * (velocity.dot(collNorm) * collNorm);
+                    // bound = true;
                     // velocity *= -0.3;
                     // while(newPosition.y() + EPSILON > TOP){
                     //     newPosition = newPosition + velocity * DELTAT;
                     // }
+                    double d = abs(newPosition.y() - TOP);
+                    newPosition = Vector3f(newPosition.x(), newPosition.y() - d, newPosition.z());
+                    newVelocity = Vector3f(newVelocity.x(), newVelocity.y() * c, newVelocity.z());
                 }
                 if(newPosition.x() - EPSILON < LEFT){
-                    double boundTime = (position.x() - (LEFT)) / velocity.norm();
-                    Vector3f collision = position + boundTime * velocity;
-                    collNorm << 1, 0, 0;
-                    double penDist = (newPosition - collision).norm();
-                    newPosition = newPosition + penDist * collNorm;
-                    // velocity = velocity - ( 1 + cr) * (velocity.dot(collNorm) * collNorm);
-                    bound = true;
+                    // double boundTime = (position.x() - (LEFT)) / velocity.norm();
+                    // Vector3f collision = position + boundTime * velocity;
+                    // collNorm << 1, 0, 0;
+                    // double penDist = (newPosition - collision).norm();
+                    // newPosition = newPosition + penDist * collNorm;
+                    // // velocity = velocity - ( 1 + cr) * (velocity.dot(collNorm) * collNorm);
+                    // bound = true;
                     // velocity *= -0.3;
                     // while(newPosition.x() + EPSILON < LEFT){
                     //     newPosition = newPosition + velocity * DELTAT;
                     // }
+                    double d = abs(newPosition.x() - LEFT);
+                    newPosition = Vector3f(newPosition.x() + d, newPosition.y(), newPosition.z());
+                    newVelocity = Vector3f(newVelocity.x() * c, newVelocity.y(), newVelocity.z());
                 }
                 if(newPosition.x() + EPSILON > RIGHT){
-                    double boundTime = (-position.x() + (RIGHT)) / velocity.norm();
-                    Vector3f collision = position + boundTime * velocity;
-                    collNorm << -1, 0, 0;
-                    double penDist = (newPosition - collision).norm();
-                    newPosition = newPosition + penDist * collNorm;
-                    // velocity = velocity - ( 1 + cr) * (velocity.dot(collNorm) * collNorm);
-                    bound = true;
+                    // double boundTime = (-position.x() + (RIGHT)) / velocity.norm();
+                    // Vector3f collision = position + boundTime * velocity;
+                    // collNorm << -1, 0, 0;
+                    // double penDist = (newPosition - collision).norm();
+                    // newPosition = newPosition + penDist * collNorm;
+                    // // velocity = velocity - ( 1 + cr) * (velocity.dot(collNorm) * collNorm);
+                    // bound = true;
                     // velocity *= -0.3;
                     // while(newPosition.x() - EPSILON > RIGHT){
                     //     newPosition = newPosition + velocity * DELTAT;
                     // }
+                    double d = abs(newPosition.x() - RIGHT);
+                    newPosition = Vector3f(newPosition.x() - d, newPosition.y(), newPosition.z());
+                    newVelocity = Vector3f(newVelocity.x() * c, newVelocity.y(), newVelocity.z());
                 }
                 if(newPosition.z() - EPSILON < BACK){
-                    double boundTime = (position.z() - (BACK)) / velocity.norm();
-                    Vector3f collision = position + boundTime * velocity;
-                    collNorm << 0, 0, 1;
-                    double penDist = (newPosition - collision).norm();
-                    newPosition = newPosition + penDist * collNorm;
-                    // velocity = velocity - ( 1 + cr) * (velocity.dot(collNorm) * collNorm);
-                    bound = true;
+                    // double boundTime = (position.z() - (BACK)) / velocity.norm();
+                    // Vector3f collision = position + boundTime * velocity;
+                    // collNorm << 0, 0, 1;
+                    // double penDist = (newPosition - collision).norm();
+                    // newPosition = newPosition + penDist * collNorm;
+                    // // velocity = velocity - ( 1 + cr) * (velocity.dot(collNorm) * collNorm);
+                    // bound = true;
                     // velocity *= -0.3;
                     // while(newPosition.z() - EPSILON < BACK){
                     //     newPosition = newPosition + velocity * DELTAT;
                     // }
+                    double d = abs(newPosition.z() - BACK);
+                    newPosition = Vector3f(newPosition.x(), newPosition.y(), newPosition.z() + d);
+                    newVelocity = Vector3f(newVelocity.x(), newVelocity.y(), newVelocity.z() * c);
                 }
                 if(newPosition.z() + EPSILON > FRONT){
-                    double boundTime = (-position.z() + (FRONT)) / velocity.norm();
-                    Vector3f collision = position + boundTime * velocity;
-                    collNorm << 0, 0, -1;
-                    double penDist = (newPosition - collision).norm();
-                    newPosition = newPosition + penDist * collNorm;
-                    // velocity = velocity - ( 1 + cr) * (velocity.dot(collNorm) * collNorm);
-                    bound = true;
+                    // double boundTime = (-position.z() + (FRONT)) / velocity.norm();
+                    // Vector3f collision = position + boundTime * velocity;
+                    // collNorm << 0, 0, -1;
+                    // double penDist = (newPosition - collision).norm();
+                    // newPosition = newPosition + penDist * collNorm;
+                    // // velocity = velocity - ( 1 + cr) * (velocity.dot(collNorm) * collNorm);
+                    // bound = true;
                     // velocity *= -0.3;
                     // while(newPosition.z() + EPSILON > FRONT){
                     //     newPosition = newPosition + velocity * DELTAT;
                     // }
-
+                    double d = abs(newPosition.z() - FRONT);
+                    newPosition = Vector3f(newPosition.x(), newPosition.y(), newPosition.z() - d);
+                    newVelocity = Vector3f(newVelocity.x(), newVelocity.y(), newVelocity.z() * c);
                 }
-                if(bound) {
-                    newVelocity *= -0.3;
-                }
+                // if(bound) {
+                //     newVelocity *= -0.3;
+                // }
             //}
             particle->setPosition(newPosition);
             particle->setVelocity(newVelocity);
