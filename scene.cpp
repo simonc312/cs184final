@@ -1,21 +1,42 @@
 //ffmpg
 #include "fluid.h"
 
+
 Scene::Scene(int p, double t, double s, int m){
     maxParts = p;
     timeStep = t;
     step = s;
     march = m;
     particles = new vector<Particle *>();
+    //spatialHashTable= new tr1::unordered_map<Vector3f,Particle *,hash_function>();
+    spatialHashTable.max_load_factor(1);
     film = new Film(WIDTH, HEIGHT);
     cubes = new Cubes();
+
+    int x = GRIDX + 1;
+    int y = GRIDY + 1;
+    int z = GRIDZ + 1;
+    grids = new GRIDCELL**[x];
+    for(int i=0;i<x;i++){
+        grids[i] = new GRIDCELL *[y];
+    }
+    for(int i = 0; i < x; i ++){
+        for(int j = 0; j < y; j++){
+            grids[i][j] = new GRIDCELL[z];
+        }
+    }
+
     init();
-    //render();
+}
+
+int hash_function(Vector3f pos){
+    return  (((int)pos.x()*73856093) xor ((int)pos.y()*19349663) xor ((int)pos.z()*83492791)) % (2*(100)+1);
 }
 
 void Scene::init(){
     srand(time(NULL));
-        for(int i= 0 ; i < maxParts; i ++){
+
+    for(int i= 0 ; i < maxParts; i ++){
             // double x = fRand(-0.1, 0.1);
             // double y = fRand(0.5, 0.6);
             // double z = fRand(-1.1, -1.6);
@@ -29,26 +50,31 @@ void Scene::init(){
             double y = fRand(450, 475);
             double z = fRand(-350, -450);
             Vector3f pos(x, y, z);
+
+            int gridX = floor((x - LEFT)/GRID);
+            int gridY = floor((y - BOTTOM)/GRID);
+            int gridZ = floor((z - BACK)/GRID);
             Particle *p = new Particle(MASS, pos, Vector3f(0, 0, 0));
+            p->setGridPosition(Vector3f(gridX, gridY, gridZ));
+            grids[gridX][gridY][gridZ].particles.push_back(p);
             particles->push_back(p);
-        }
+
+
+        //postition partitioned by width of grid cube = support radius H
+            // spatialHashTable[pos/H] = p;
+        // particles->push_back(p);
+        //cout << "particle " << i << " position: " << pos/H << endl;
+        //cout << "hash returns pos: " << spatialHashTable[pos/(H)] << endl;
+    }
+    // cout << spatialHashTable.max_load_factor() << endl;
+    // cout << spatialHashTable.load_factor() << endl;
+    // cout << spatialHashTable.size() << endl;
+    // cout << spatialHashTable.bucket_count() << endl;
+    // for(int i = 0; i < particles->size(); i++){
+        // cout << "particle " << i << " with position: " << particles->at(i)->getPosition() /H << " bucket # " << spatialHashTable.bucket(particles->at(i)->getPosition() /H) << endl; }
+
 }
 
-// This is the hash function taken from the paper by kelager its from email
-// page 47
-// However the unorder map data structure I use from c++ has its own default
-// hash function so I don't know if this will work...somehow make our own custom
-// hash function and embed it to the data structure?
-//int hashFunction(Vector3f pos){
-  //  return (((int)pos.x()*73856093) xor ((int)pos.y()*19349663) xor ((int)pos.z()*83492791)) % getNextPrime(particles//->size());
-//}
-
-//int getNextPrime(int n){
-// this function should return the closest prime number >= n;
-    //it's hard finding code to use on the internet for this function which is
-    //ridiculous
-  //  return 1;
-//}
 
 
 void Scene::render(){
@@ -77,30 +103,97 @@ void Scene::render(){
             Particle *particle = particles->at(i);
             double density = MASS;
             vector<Particle *> findNeighs;
-
-            for(int j = 0; j < particles->size(); j++){  //comparison to all other particles to see if they're close enough to effect the density
-                Particle *tempParticle = particles->at(j);
-                double dist = particle->getDistance(*tempParticle);
-
-                if (dist <= H && i != j){  //if the particle is close enough, add its mass * kernel to the density
-                    double kern = particle->getKernel(dist);
-                    //cout << dist << endl;
-                    density += tempParticle->getMass() * kern;
-                    findNeighs.push_back(tempParticle);
+            Vector3f gridPos = particle->getGridPosition();
+            Vector3f BBmin = gridPos - Vector3f(1, 1, 1);
+            Vector3f BBmax = gridPos + Vector3f(1, 1, 1);
+            // Vector3f BBmin = ((particle->getPosition()) - Vector3f(H,H,H))/H;
+            // Vector3f BBmax = ((particle->getPosition()) + Vector3f(H,H,H))/H;
+            // Vector3f discretePos = particle->getPosition();
+            // int bucket = spatialHashTable.bucket(discretePos / H);
+            // for (std::tr1::__detail::_Node_iterator<std::pair<const Vector3f, Particle*>, false, false> local_it = spatialHashTable.begin(bucket); local_it!= spatialHashTable.end(bucket); ++local_it){
+            //     Particle * boundingPart = local_it->second;
+            //     if(boundingPart != particle){
+            for(int y = BBmin.y(); y <=BBmax.y(); y++){
+                for(int x = BBmin.x(); x <=BBmax.x(); x++){
+                    for(int z = BBmin.z(); z <= BBmax.z(); z++){
+                        if(x >= 0 && y >= 0 && z >= 0 && x < GRIDX && y < GRIDY && z < GRIDZ){
+                            vector<Particle *> gridParticles = grids[x][y][z].particles;
+                            for(int j = 0; j < gridParticles.size(); j++){
+                                Particle *tempParticle = gridParticles.at(j);
+                                double dist = particle->getDistance(*tempParticle);
+                                if(dist <= H && particle != tempParticle){
+                                    double kern = particle->getKernel(dist);
+                                    density += tempParticle->getMass() * kern;
+                                    findNeighs.push_back(tempParticle);
+                                }
+                            }
+                        }
+                    }
                 }
             }
+
+            // double density = MASS;
+            //              for(int l = 0; l < particles->size(); l++){  //naive
+            //                     Particle *tempParticle = particles->at(l);
+            //                     double dist = particle->getDistance(*tempParticle);
+
+            //                     if (dist <= H){  //if the particle is close enough, add its mass * kernel to the density
+            //                         double kern = particle->getKernel(dist);
+
+            //                         density += tempParticle->getMass() * kern;
+            //                     }
+            //                }
+            //                particle->setDensity(density);
+
+                    // double dist = particle->getDistance(*boundingPart);
+                    // double kern = particle->getKernel(dist);
+// <<<<<<< HEAD
+//                     //cout << dist << endl;
+//                     density += tempParticle->getMass() * kern;
+//                     findNeighs.push_back(tempParticle);
+// =======
+                    // density += boundingPart->getMass() * kern;
+                    // findNeighs.push_back(boundingPart);
+// >>>>>>> 5ad23f67caebdc40bc1666acd09a99ece0e20ef7
+
+            //cout << "bb for particle " << i << endl;
+            //for(double x= BBmin.x(); x<= BBmax.x(); x+=1.0/H){
+              //  for(double y=BBmin.y(); y<= BBmax.y(); y+=1.0/H){
+                //    for(double z=BBmin.z(); z<= BBmax.z(); z+=1.0/H){
+                       // discretePos.x() = x;
+                       // discretePos.y() = y;
+                       // discretePos.z() = z;
+                        //cout << discretePos << endl;
+                       // Particle *boundingPart = spatialHashTable[discretePos];
+                        //cout << boundingPart << endl;
+                       // if(boundingPart == 0){break;}
+                        //cout << "hit" << endl;//no particle at position
+                        //double dist = particle->getDistance(*boundingPart);
+                        //if(dist <= H && particle != boundingPart)
+                        //{   double kern = particle->getKernel(dist);
+                         //   density += boundingPart->getMass() * kern;
+                         //   findNeighs.push_back(boundingPart);}
+               //     }
+             //   }
+
+           // }
+
             neighbors.push_back(findNeighs);
             particle->setDensity(density);
+// <<<<<<< HEAD
             totalDens += density;
+// =======
+//            // cout << "hello 4" << endl;
+// >>>>>>> 5ad23f67caebdc40bc1666acd09a99ece0e20ef7
         }
-        cout << totalDens / particles->size() << endl;
+        // cout << totalDens / particles->size() << endl;
 
         if(march == 1){
 
             int x = (RIGHT - LEFT) / GRID + 1;
             int y = (TOP - BOTTOM)/GRID + 1;
             int z = (abs(BACK - FRONT))/GRID + 1;
-            cout << x << " " << y << " " << z << endl;
+            // cout << x << " " << y << " " << z << endl;
 
             Particle * grid[x][y][z];
 
@@ -264,7 +357,7 @@ void Scene::render(){
             double pressureJ = particle->calcPressure();
 
             vector<Particle * > curNeighs = neighbors[i];
-
+            // cout << "particle " << i << " num neighbors" << curNeighs.size() << endl;
             for(int j = 0; j < curNeighs.size(); j++){//currNeighs.size(); j++){
 
                 Particle *tempParticle = curNeighs[j];// currNeighs[j]->p;
@@ -294,10 +387,6 @@ void Scene::render(){
 
             Vector3f surfaceTension = -TENSION * colorField * surfaceNormal / surfaceNormal.norm();
             Vector3f gravityForce(0, particle->getDensity() * GRAVITY, 0);
-            // cout << "pForce: " << pressureForce << endl;
-            // //cout << "dens: " << particle->getDensity() << endl;
-            //  cout << "glForce: " << gravityForce << endl;
-            //  cout << "vForce: " << viscosityForce << endl;
 
             //Update next position
             Vector3f totalForce = gravityForce + pressureForce + viscosityForce;
@@ -310,202 +399,68 @@ void Scene::render(){
             //cout << "2. " << velocity << endl;
             Vector3f newPosition = position + DELTAT * newVelocity;
 
-            //Boundary check next position
-            // int c = 0.1;
-            // double dist = abs(position.x() - LEFT - EPSILON);
-            // if(dist < EPSILON ){
-            //     Vector3f normal(1, 0, 0);
-            //     double incidentAngle = velocity.dot(normal);
-            //     if(incidentAngle < 0){
-            //         //double reflectAngle = incidentAngle * 1.1;
-            //         newVelocity = newVelocity * -0.3;
-            //         newVelocity = newVelocity + c * (2 * EPSILON - dist) * normal;
-            //         newPosition = position + DELTAT * newVelocity;
-            //     }
-            // }
-            // dist = abs(position.x() - RIGHT + EPSILON);
-            // if(dist < EPSILON ){
-            //     Vector3f normal(-1, 0, 0);
-            //     double incidentAngle = velocity.dot(normal);
-            //     if(incidentAngle < 0){
-            //         //double reflectAngle = incidentAngle * 1.1;
-            //         newVelocity = velocity * -0.3;
-            //         newVelocity = newVelocity + c * (2 * EPSILON - dist) * normal;
-            //         newPosition = position + DELTAT * newVelocity;
-            //     }
-            // }
-            // dist = abs(position.y() - BOTTOM - EPSILON);
-            // if(dist < EPSILON ){
-            //     Vector3f normal(0, 1, 0);
-            //     double incidentAngle = velocity.dot(normal);
-            //     if(incidentAngle < 0){
-            //         //double reflectAngle = incidentAngle * 1.1;
-            //         newVelocity = velocity * -0.3;
-            //         newVelocity = newVelocity + c * (2 * EPSILON - dist) * normal;
-            //         newPosition = position + DELTAT * newVelocity;
-            //     }
-            // }
-            // dist = abs(position.y() - TOP + EPSILON);
-            // if(dist < EPSILON ){
-            //     Vector3f normal(0, -1, 0);
-            //     double incidentAngle = velocity.dot(normal);
-            //     if(incidentAngle < 0){
-            //         //double reflectAngle = incidentAngle * 1.1;
-            //         newVelocity = velocity * -0.3;
-            //         newVelocity = newVelocity + c * (2 * EPSILON - dist) * normal;
-            //         newPosition = position + DELTAT * newVelocity;
-            //     }
-            // }
-            // dist = abs(position.z() - FRONT + EPSILON);
-            // if(dist < EPSILON ){
-            //     Vector3f normal(0, 0, -1);
-            //     double incidentAngle = velocity.dot(normal);
-            //     if(incidentAngle < 0){
-            //         //double reflectAngle = incidentAngle * 1.1;
-            //         newVelocity = velocity * -0.3;
-            //         newVelocity = newVelocity + c * (2 * EPSILON - dist) * normal;
-            //         newPosition = position + DELTAT * newVelocity;
-            //     }
-            // }
-            // dist = abs(position.z() - BACK - EPSILON);
-            // if(dist < EPSILON ){
-            //     Vector3f normal(0, 0, 1);
-            //     double incidentAngle = velocity.dot(normal);
-            //     if(incidentAngle < 0){
-            //         //double reflectAngle = incidentAngle * 1.1;
-            //         newVelocity = velocity * -0.3;
-            //         newVelocity = newVelocity + c * (2 * EPSILON - dist) * normal;
-            //         newPosition = position + DELTAT * newVelocity;
-            //     }
-            // }
 
-
-            // bool bounce = false;
-            //  while((newPosition.x() - RADIUS <= LEFT) || (newPosition.y() - RADIUS <= BOTTOM) || (newPosition.x() + RADIUS >= RIGHT) || (newPosition.y() + RADIUS >= TOP) || (newPosition.z() + RADIUS <= BACK) || (newPosition.z() - RADIUS >= FRONT)){
-            //     bounce = true;
-                // newVelocity *= 0.9;
-            //     newPosition = position + DELTAT * newVelocity;
-            //  }
-             // if(bounce) velocity *= -1;
-
-            // bool bound = false;
             double c = -0.3;
-            // Vector3f collNorm = Vector3f::Zero();
-            //if(t < 100 ){
-                if(newPosition.y() - EPSILON < BOTTOM){
-                    // double boundTime = (position.y() - (BOTTOM)) / velocity.norm();
-                    // cout << boundTime << endl;  //maybe boundTime = min(boundTime, DELTA);
-                    // Vector3f collision = position + boundTime * velocity;
-                    // // cout << "collision: " << collision << endl;
-                    // collNorm << 0, 1, 0;
-                    // double penDist = (newPosition - collision).norm();
-                    // //cout << penDist << endl;
-                    // // cout << "1. " << newPosition << endl;
-                    // newPosition = newPosition + penDist * collNorm;
-                    // bound = true;
-                    // velocity = velocity - ( 1 + cr) * (velocity.dot(collNorm) * collNorm);
-                    // cout << "2. " << newPosition << endl;
-                    // bound = true;
-                    // velocity *= -0.3;
-                    // while(newPosition.y() - EPSILON < BOTTOM){
-                    //     newPosition = newPosition + velocity * DELTAT;
-                    // }
-                    double d = abs(newPosition.y() - BOTTOM);
-                    newPosition = Vector3f(newPosition.x(), BOTTOM + EPSILON, newPosition.z());
-                    newVelocity = Vector3f(newVelocity.x(), newVelocity.y() * c, newVelocity.z());
-                }
-                if(newPosition.y() + EPSILON > TOP){
-                    // double boundTime = (-position.y() + (TOP)) / velocity.norm();
-                    // Vector3f collision = position + boundTime * velocity;
-                    // collNorm << 0, -1, 0;
-                    // double penDist = (newPosition - collision).norm();
-                    // newPosition = newPosition + penDist * collNorm;
-                    // // velocity = velocity - ( 1 + cr) * (velocity.dot(collNorm) * collNorm);
-                    // bound = true;
-                    // velocity *= -0.3;
-                    // while(newPosition.y() + EPSILON > TOP){
-                    //     newPosition = newPosition + velocity * DELTAT;
-                    // }
-                    double d = abs(newPosition.y() - TOP);
-                    newPosition = Vector3f(newPosition.x(), newPosition.y() - d, newPosition.z());
-                    newVelocity = Vector3f(newVelocity.x(), newVelocity.y() * c, newVelocity.z());
-                }
-                if(newPosition.x() - EPSILON < LEFT){
-                    // double boundTime = (position.x() - (LEFT)) / velocity.norm();
-                    // Vector3f collision = position + boundTime * velocity;
-                    // collNorm << 1, 0, 0;
-                    // double penDist = (newPosition - collision).norm();
-                    // newPosition = newPosition + penDist * collNorm;
-                    // // velocity = velocity - ( 1 + cr) * (velocity.dot(collNorm) * collNorm);
-                    // bound = true;
-                    // velocity *= -0.3;
-                    // while(newPosition.x() + EPSILON < LEFT){
-                    //     newPosition = newPosition + velocity * DELTAT;
-                    // }
-                    double d = abs(newPosition.x() - LEFT);
-                    newPosition = Vector3f(newPosition.x() + d, newPosition.y(), newPosition.z());
-                    newVelocity = Vector3f(newVelocity.x() * c, newVelocity.y(), newVelocity.z());
-                }
-                if(newPosition.x() + EPSILON > RIGHT){
-                    // double boundTime = (-position.x() + (RIGHT)) / velocity.norm();
-                    // Vector3f collision = position + boundTime * velocity;
-                    // collNorm << -1, 0, 0;
-                    // double penDist = (newPosition - collision).norm();
-                    // newPosition = newPosition + penDist * collNorm;
-                    // // velocity = velocity - ( 1 + cr) * (velocity.dot(collNorm) * collNorm);
-                    // bound = true;
-                    // velocity *= -0.3;
-                    // while(newPosition.x() - EPSILON > RIGHT){
-                    //     newPosition = newPosition + velocity * DELTAT;
-                    // }
-                    double d = abs(newPosition.x() - RIGHT);
-                    newPosition = Vector3f(newPosition.x() - d, newPosition.y(), newPosition.z());
-                    newVelocity = Vector3f(newVelocity.x() * c, newVelocity.y(), newVelocity.z());
-                }
-                if(newPosition.z() - EPSILON < BACK){
-                    // double boundTime = (position.z() - (BACK)) / velocity.norm();
-                    // Vector3f collision = position + boundTime * velocity;
-                    // collNorm << 0, 0, 1;
-                    // double penDist = (newPosition - collision).norm();
-                    // newPosition = newPosition + penDist * collNorm;
-                    // // velocity = velocity - ( 1 + cr) * (velocity.dot(collNorm) * collNorm);
-                    // bound = true;
-                    // velocity *= -0.3;
-                    // while(newPosition.z() - EPSILON < BACK){
-                    //     newPosition = newPosition + velocity * DELTAT;
-                    // }
-                    double d = abs(newPosition.z() - BACK);
-                    newPosition = Vector3f(newPosition.x(), newPosition.y(), newPosition.z() + d);
-                    newVelocity = Vector3f(newVelocity.x(), newVelocity.y(), newVelocity.z() * c);
-                }
-                if(newPosition.z() + EPSILON > FRONT){
-                    // double boundTime = (-position.z() + (FRONT)) / velocity.norm();
-                    // Vector3f collision = position + boundTime * velocity;
-                    // collNorm << 0, 0, -1;
-                    // double penDist = (newPosition - collision).norm();
-                    // newPosition = newPosition + penDist * collNorm;
-                    // // velocity = velocity - ( 1 + cr) * (velocity.dot(collNorm) * collNorm);
-                    // bound = true;
-                    // velocity *= -0.3;
-                    // while(newPosition.z() + EPSILON > FRONT){
-                    //     newPosition = newPosition + velocity * DELTAT;
-                    // }
-                    double d = abs(newPosition.z() - FRONT);
-                    newPosition = Vector3f(newPosition.x(), newPosition.y(), newPosition.z() - d);
-                    newVelocity = Vector3f(newVelocity.x(), newVelocity.y(), newVelocity.z() * c);
-                }
-                // if(bound) {
-                //     newVelocity *= -0.3;
-                // }
-            //}
+            if(newPosition.y() - EPSILON < BOTTOM){
+                double d = abs(newPosition.y() - BOTTOM);
+                newPosition = Vector3f(newPosition.x(), BOTTOM + EPSILON, newPosition.z());
+                newVelocity = Vector3f(newVelocity.x(), newVelocity.y() * c, newVelocity.z());
+            }
+            if(newPosition.y() + EPSILON > TOP){
+                double d = abs(newPosition.y() - TOP);
+                newPosition = Vector3f(newPosition.x(), newPosition.y() - d, newPosition.z());
+                newVelocity = Vector3f(newVelocity.x(), newVelocity.y() * c, newVelocity.z());
+            }
+            if(newPosition.x() - EPSILON < LEFT){
+                double d = abs(newPosition.x() - LEFT);
+                newPosition = Vector3f(newPosition.x() + d, newPosition.y(), newPosition.z());
+                newVelocity = Vector3f(newVelocity.x() * c, newVelocity.y(), newVelocity.z());
+            }
+            if(newPosition.x() + EPSILON > RIGHT){
+                double d = abs(newPosition.x() - RIGHT);
+                newPosition = Vector3f(newPosition.x() - d, newPosition.y(), newPosition.z());
+                newVelocity = Vector3f(newVelocity.x() * c, newVelocity.y(), newVelocity.z());
+            }
+            if(newPosition.z() - EPSILON < BACK){
+                double d = abs(newPosition.z() - BACK);
+                newPosition = Vector3f(newPosition.x(), newPosition.y(), newPosition.z() + d);
+                newVelocity = Vector3f(newVelocity.x(), newVelocity.y(), newVelocity.z() * c);
+            }
+            if(newPosition.z() + EPSILON > FRONT){
+                double d = abs(newPosition.z() - FRONT);
+                newPosition = Vector3f(newPosition.x(), newPosition.y(), newPosition.z() - d);
+                newVelocity = Vector3f(newVelocity.x(), newVelocity.y(), newVelocity.z() * c);
+            }
             particle->setPosition(newPosition);
             particle->setVelocity(newVelocity);
         }
+        //reset and update spatial hash table
+        // spatialHashTable.clear();
+        // for(int i=0; i< particles -> size();i++){
+        //     Particle *p = particles->at(i); Vector3f pos = p->getPosition(); spatialHashTable[pos/H]=p;}
         saveImage(t);
 
         glFlush();
         glutSwapBuffers();
         glPopMatrix();
+
+        for(int i = 0; i < GRIDX; i++){
+            for(int j = 0; j < GRIDY; j++){
+                for(int k = 0; k < GRIDZ; k++){
+                    grids[i][j][k].particles.clear();
+                }
+            }
+        }
+
+        for(int i = 0; i < particles->size(); i++){
+            Particle *particle = particles->at(i);
+            Vector3f position = particle->getPosition();
+            int gridX = floor((position.x() - LEFT)/GRID);
+            int gridY = floor((position.y() - BOTTOM)/GRID);
+            int gridZ = floor((position.z() - BACK)/GRID);
+            particle->setGridPosition(Vector3f(gridX, gridY, gridZ));
+            grids[gridX][gridY][gridZ].particles.push_back(particle);
+        }
     }
 }
 
@@ -634,6 +589,10 @@ void Particle::setDensity(double d){
     density = d;
 }
 
+void Particle::setGridPosition(Vector3f p){
+    gridPos = p;
+}
+
 
 double Particle::getDistance(Particle p){
     double x = pow(position.x() - p.getPosition().x(), 2);
@@ -666,4 +625,8 @@ Vector3f Particle::getKernDerive(double r, Vector3f rij){
 double Particle::getKernSecond(double r){
     double c = 45 / (M_PI * pow((double)H, 6.0));
     return c * (H - r);
+}
+
+Vector3f Particle::getGridPosition(){
+    return gridPos;
 }

@@ -16,6 +16,8 @@
 #include <fstream>
 #include <cstring>
 #include <omp.h>
+#include <tr1/unordered_map>
+
 
 #ifdef _WIN32
 #include <windows.h>
@@ -79,6 +81,10 @@
 #define EPSILON 4
 #define GRID 5
 
+#define GRIDX  (RIGHT - LEFT) / GRID
+#define GRIDY  (TOP - BOTTOM)/GRID
+#define GRIDZ  (abs(BACK - FRONT))/GRID
+
 
 //pos: 385.098
 // 718.953
@@ -114,16 +120,30 @@ typedef struct neighbourAndDist{
 typedef struct {
    Vector3f p[8];
    double val[8];
-
+   vector<Particle * > particles;
 } GRIDCELL;
+
+typedef struct hash_function{
+    size_t operator()(const Vector3f &pos) const
+    {
+        return (((int)pos.x()*73856093) xor ((int)pos.y()*19349663) xor ((int)pos.z()*83492791)) % (2*(2000)+1);
+    }
+};
+
+typedef struct
+{
+    bool operator() (const Vector3f &v1, const Vector3f &v2) const { return ((v1 - v2).norm() <= 0.1); }
+} HashKeyEq;
+
 
 
 class Scene{
 public:
     Scene(int p, double t, double s, int m);
     vector<Particle *> *particles;
-
+    tr1::unordered_map<Vector3f,Particle *, hash_function, HashKeyEq> spatialHashTable;
     void render();
+    GRIDCELL *** grids;
 private:
     Cubes *cubes;
     Film *film;
@@ -154,14 +174,15 @@ public:
     void setPosition(Vector3f p);
     void setVelocity(Vector3f v);
     void setDensity(double d);
+    void setGridPosition(Vector3f p);
     double getKernel(double r);
     Vector3f getKernDerive(double r,  Vector3f rij);
     double getKernSecond(double r);
     double calcPressure();
+    Vector3f getGridPosition();
 private:
     double mass, density;
-    Vector3f position;
-    Vector3f velocity;
+    Vector3f position, velocity, gridPos;
 };
 
 
