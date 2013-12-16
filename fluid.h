@@ -55,27 +55,28 @@
 // #define RADIUS 4//0.01
 
 #define MAXINITPART 1
-#define MASS 0.005
+#define MASS 0.2
 #define BPP 24
 #define H 20 //0.0625
 #define GRAVITY -20
-#define IDEALDENSITY 500 //higher makes it more gaslike
-#define STIFFNESS 0.1
+#define IDEALDENSITY 1000 //higher makes it more gaslike
+#define STIFFNESS 100
 #define VISC 20
 #define DELTAT 0.1
 #define RADIUS 4
 #define SRADIUS 0.01 // RADIUS / (WIDTH/2)
 
-#define LEFT 325//-0.5
-#define RIGHT 475//0.5
-#define BOTTOM 325//-0.6
-#define TOP 475// 0.7
-#define FRONT -325
-#define BACK -475
+#define LEFT 320//-0.5
+#define RIGHT 480//0.5
+#define BOTTOM 320//-0.6
+#define TOP 480// 0.7
+#define FRONT -320
+#define BACK -480
 #define WIDTH 800
 #define HEIGHT 700
 #define LENGTH 800
 #define EPSILON 4
+#define GRID 5
 
 
 //pos: 385.098
@@ -105,9 +106,9 @@ typedef struct neighbourAndDist{
     double dist;
 } neighbourAndDist;
 
-typedef struct {
-   Vector3f p[3];
-} TRIANGLE;
+// typedef struct {
+//    Vector3f p[3];
+// } TRIANGLE;
 
 typedef struct {
    Vector3f p[8];
@@ -118,12 +119,14 @@ typedef struct {
 
 class Scene{
 public:
-    Scene(int p, double t, double s);
+    Scene(int p, double t, double s, int m);
     vector<Particle *> *particles;
 
     void render();
 private:
+    Cubes *cubes;
     Film *film;
+    int march;
     int maxParts;
     double timeStep;
     double step;
@@ -138,6 +141,7 @@ private:
 
 class Particle{
 public:
+    Particle();
     Particle(double m, Vector3f p, Vector3f v);
     double getDensity();
     double getDistance(Particle p);
@@ -176,6 +180,8 @@ class Viewport {
 
 class Cubes {
 public:
+    Cubes();
     Vector3f VertexInterp(double isolevel, Vector3f p1, Vector3f p2, double valp1, double valp2);
-    int polygonise(GRIDCELL grid,double isolevel,TRIANGLE *triangles);
+    double convert(double point, double comp);
+    int polygonise(GRIDCELL grid,double isolevel);//,TRIANGLE *triangles);
 };

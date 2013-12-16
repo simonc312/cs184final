@@ -1,7 +1,7 @@
 #include "fluid.h"
 //http://stackoverflow.com/questions/776664/marching-cube-question
 //http://paulbourke.net/geometry/polygonise/
-
+Cubes::Cubes(){}
 
 /*
    Linearly interpolate the position where an isosurface cuts
@@ -30,8 +30,9 @@ Vector3f Cubes::VertexInterp(double isolevel, Vector3f p1, Vector3f p2, double v
     0 will be returned if the grid cell is either totally above
    of totally below the isolevel.
 */
-int Cubes::polygonise(GRIDCELL grid,double isolevel,TRIANGLE *triangles)
+int Cubes::polygonise(GRIDCELL grid,double isolevel)//,TRIANGLE *triangles)
 {
+
    int i,ntriang;
    int cubeindex;
    Vector3f vertlist[12];
@@ -340,58 +341,113 @@ int triTable[256][16] =
    if (grid.val[5] < isolevel) cubeindex |= 32;
    if (grid.val[6] < isolevel) cubeindex |= 64;
    if (grid.val[7] < isolevel) cubeindex |= 128;
+   // if(cubeindex != 255){
+   //    cout << cubeindex << endl;
+   // }
 
    /* Cube is entirely in/out of the surface */
-   if (edgeTable[cubeindex] == 0)
+   if (edgeTable[cubeindex] == 0){
+      //cout << "0" << endl;
       return(0);
-
-   /* Find the vertices where the surface intersects the cube */
-   if (edgeTable[cubeindex] & 1)
-      vertlist[0] =
-         VertexInterp(isolevel,grid.p[0],grid.p[1],grid.val[0],grid.val[1]);
-   if (edgeTable[cubeindex] & 2)
-      vertlist[1] =
-         VertexInterp(isolevel,grid.p[1],grid.p[2],grid.val[1],grid.val[2]);
-   if (edgeTable[cubeindex] & 4)
-      vertlist[2] =
-         VertexInterp(isolevel,grid.p[2],grid.p[3],grid.val[2],grid.val[3]);
-   if (edgeTable[cubeindex] & 8)
-      vertlist[3] =
-         VertexInterp(isolevel,grid.p[3],grid.p[0],grid.val[3],grid.val[0]);
-   if (edgeTable[cubeindex] & 16)
-      vertlist[4] =
-         VertexInterp(isolevel,grid.p[4],grid.p[5],grid.val[4],grid.val[5]);
-   if (edgeTable[cubeindex] & 32)
-      vertlist[5] =
-         VertexInterp(isolevel,grid.p[5],grid.p[6],grid.val[5],grid.val[6]);
-   if (edgeTable[cubeindex] & 64)
-      vertlist[6] =
-         VertexInterp(isolevel,grid.p[6],grid.p[7],grid.val[6],grid.val[7]);
-   if (edgeTable[cubeindex] & 128)
-      vertlist[7] =
-         VertexInterp(isolevel,grid.p[7],grid.p[4],grid.val[7],grid.val[4]);
-   if (edgeTable[cubeindex] & 256)
-      vertlist[8] =
-         VertexInterp(isolevel,grid.p[0],grid.p[4],grid.val[0],grid.val[4]);
-   if (edgeTable[cubeindex] & 512)
-      vertlist[9] =
-         VertexInterp(isolevel,grid.p[1],grid.p[5],grid.val[1],grid.val[5]);
-   if (edgeTable[cubeindex] & 1024)
-      vertlist[10] =
-         VertexInterp(isolevel,grid.p[2],grid.p[6],grid.val[2],grid.val[6]);
-   if (edgeTable[cubeindex] & 2048)
-      vertlist[11] =
-         VertexInterp(isolevel,grid.p[3],grid.p[7],grid.val[3],grid.val[7]);
-
-   /* Create the triangle */
-   ntriang = 0;
-   for (i=0;triTable[cubeindex][i]!=-1;i+=3) {
-      triangles[ntriang].p[0] = vertlist[triTable[cubeindex][i  ]];
-      triangles[ntriang].p[1] = vertlist[triTable[cubeindex][i+1]];
-      triangles[ntriang].p[2] = vertlist[triTable[cubeindex][i+2]];
-      ntriang++;
    }
 
-   return(ntriang);
+   /* Find the vertices where the surface intersects the cube */
+   if (edgeTable[cubeindex] & 1){
+      //cout << "1" << endl;
+      vertlist[0] = VertexInterp(isolevel,grid.p[0],grid.p[1],grid.val[0],grid.val[1]);
+   }
+   if (edgeTable[cubeindex] & 2){
+      //cout << "2" << endl;
+      vertlist[1] =
+         VertexInterp(isolevel,grid.p[1],grid.p[2],grid.val[1],grid.val[2]);
+   }
+   if (edgeTable[cubeindex] & 4){
+      //cout << "4" << endl;
+      vertlist[2] =
+         VertexInterp(isolevel,grid.p[2],grid.p[3],grid.val[2],grid.val[3]);
+   }
+   if (edgeTable[cubeindex] & 8){
+      //cout << "8" << endl;
+      vertlist[3] =
+         VertexInterp(isolevel,grid.p[3],grid.p[0],grid.val[3],grid.val[0]);
+   }
+   if (edgeTable[cubeindex] & 16){
+      //cout << "16" << endl;
+      vertlist[4] =
+         VertexInterp(isolevel,grid.p[4],grid.p[5],grid.val[4],grid.val[5]);
+   }
+   if (edgeTable[cubeindex] & 32){
+      //cout << "32" << endl;
+      vertlist[5] =
+         VertexInterp(isolevel,grid.p[5],grid.p[6],grid.val[5],grid.val[6]);
+   }
+   if (edgeTable[cubeindex] & 64){
+      //cout << "64" << endl;
+      vertlist[6] =
+         VertexInterp(isolevel,grid.p[6],grid.p[7],grid.val[6],grid.val[7]);
+   }
+   if (edgeTable[cubeindex] & 128){
+      //cout << "128" << endl;
+      vertlist[7] =
+         VertexInterp(isolevel,grid.p[7],grid.p[4],grid.val[7],grid.val[4]);
+   }
+   if (edgeTable[cubeindex] & 256){
+      //cout << "256" << endl;
+      vertlist[8] =
+         VertexInterp(isolevel,grid.p[0],grid.p[4],grid.val[0],grid.val[4]);
+   }
+   if (edgeTable[cubeindex] & 512){
+      //cout << "512" << endl;
+      vertlist[9] =
+         VertexInterp(isolevel,grid.p[1],grid.p[5],grid.val[1],grid.val[5]);
+   }
+   if (edgeTable[cubeindex] & 1024){
+      //cout << "1024" << endl;
+      vertlist[10] =
+         VertexInterp(isolevel,grid.p[2],grid.p[6],grid.val[2],grid.val[6]);
+   }
+   if (edgeTable[cubeindex] & 2048){
+      //cout << "2048" << endl;
+      vertlist[11] =
+         VertexInterp(isolevel,grid.p[3],grid.p[7],grid.val[3],grid.val[7]);
+   }
+
+   /* Create the triangle */
+   // ntriang = 0;
+   // for (i=0;triTable[cubeindex][i]!=-1;i+=3) {
+   //    triangles[ntriang].p[0] = vertlist[triTable[cubeindex][i  ]];
+   //    triangles[ntriang].p[1] = vertlist[triTable[cubeindex][i+1]];
+   //    triangles[ntriang].p[2] = vertlist[triTable[cubeindex][i+2]];
+   //    ntriang++;
+   // }
+
+   // return(ntriang);
+
+   for(i = 0; triTable[cubeindex][i] != -1; i+=3){
+      glDisable(GL_LIGHTING);
+      glColor4f(1.0, 0.0, 0.0, 0.3);
+      glBegin(GL_TRIANGLES);
+      for(int j = 0; j < 3; j++){
+
+         Vector3f position =  vertlist[triTable[cubeindex][i + j]];
+         GLdouble posX, posY, posZ;//3D point
+         posX=convert(position.x(), WIDTH);
+         posY=convert(position.y(), HEIGHT);
+         posZ=convert(position.z(), LENGTH);
+         glVertex3d(posX, posY, posZ);
+      }
+      glEnd();
+
+   }
+         glEnable(GL_LIGHTING);
+}
+
+double Cubes::convert(double point, double comp){
+    if(point >= comp/2){
+        point = (point - comp/2)/(comp/2);
+    } else{
+        point = (point - comp/2)/(comp/2);
+    }
+    return point;
 }
 

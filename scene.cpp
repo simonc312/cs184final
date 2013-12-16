@@ -1,12 +1,14 @@
 //ffmpg
 #include "fluid.h"
 
-Scene::Scene(int p, double t, double s){
+Scene::Scene(int p, double t, double s, int m){
     maxParts = p;
     timeStep = t;
     step = s;
+    march = m;
     particles = new vector<Particle *>();
     film = new Film(WIDTH, HEIGHT);
+    cubes = new Cubes();
     init();
     //render();
 }
@@ -20,9 +22,9 @@ void Scene::init(){
             // double x = fRand(WIDTH/2 - 25,WIDTH/2 + 25);
             // double y = fRand(HEIGHT-175, HEIGHT-125);
             // double z = fRand(-30, -35);
-            double x = fRand(460, 465);
-            double y = fRand(425, 460);
-            double z = fRand(-450, -465);
+            double x = fRand(385, 415);
+            double y = fRand(425, 465);
+            double z = fRand(-385, -415);
             Vector3f pos(x, y, z);
             Particle *p = new Particle(MASS, pos, Vector3f(0, 0, 0));
             particles->push_back(p);
@@ -51,8 +53,9 @@ void Scene::render(){
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);               // clear the color buffer
         glMatrixMode(GL_MODELVIEW);                   // indicate we are specifying camera transformations
         glLoadIdentity();
-        gluLookAt(0.0, 0.6, -1.25, 0.0, 0.0, -2.1, 0.0, 1.0, 0.0);
-        //gluLookAt(-0.25, 0.5, -1, 0.25, 0.0, -1, 1.0, 0.0, 0.0 );
+        gluLookAt(0.0, 0.15, -1.35, 0.0, 0.15, -10.0, 0.0, 1.0, 0.0);
+        //gluLookAt(0.0, 0.6, -1.25, .0, 0.0, -2.1, 0.0, 1.0, 0.0);
+        // gluLookAt()
         // if(t % 5 == 0) {
         //     init();
         // }
@@ -85,6 +88,145 @@ void Scene::render(){
             particle->setDensity(density);
         }
 
+        if(march == 1){
+
+            int x = (RIGHT - LEFT) / GRID + 1;
+            int y = (TOP - BOTTOM)/GRID + 1;
+            int z = (abs(BACK - FRONT))/GRID + 1;
+            Particle * grid[x][y][z];
+
+            for(int i = 0; i < x; i++){
+                for(int j = 0; j < y; j++){
+                    for(int k = 0; k < z; k++){
+                        Particle* particle = new Particle(MASS, Vector3f(i  * GRID + LEFT, j * GRID + BOTTOM, k * GRID + BACK), Vector3f(0, 0, 0));
+                        double density = MASS;
+                         for(int l = 0; l < particles->size(); l++){  //naive
+                                Particle *tempParticle = particles->at(l);
+                                double dist = particle->getDistance(*tempParticle);
+
+                                if (dist <= H){  //if the particle is close enough, add its mass * kernel to the density
+                                    double kern = particle->getKernel(dist);
+
+                                    density += tempParticle->getMass() * kern;
+                                }
+                           }
+                           particle->setDensity(density);
+                           grid[i][j][k] = particle;
+                           //cout << density << endl;
+                    }
+                }
+            }
+
+            for(int i = LEFT; i < RIGHT; i += GRID){
+                for(int j = BOTTOM; j < TOP; j += GRID){
+                    for(int k = BACK; k < FRONT; k +=GRID){
+                        GRIDCELL g;
+                        int x1 = (i - LEFT)/GRID;
+                        int x2 = (i + GRID - LEFT)/GRID;
+                        int y1 = (j - BOTTOM)/GRID;
+                        int y2 = (j + GRID - BOTTOM)/GRID;
+                        int z1 = (k - BACK)/GRID;
+                        int z2 = (k + GRID - BACK)/GRID;
+
+                        Particle *p = grid[x1][y1][z1];
+                        if(p->getDistance(Vector3f(i, j, k)) != 0 ){
+                            cerr << "Values are not the same" << endl;
+                            cout << "Particle: " << p->getPosition() << endl;
+                            cout << "Vector: " << Vector3f(i, j, k) << endl;
+                        }
+                        g.p[0] = Vector3f(p->getPosition());
+                        g.val[0] = p->getDensity();
+
+                        p = grid[x2][y1][z1];
+                        if(p->getDistance(Vector3f(i + GRID, j, k)) != 0 ){
+                            cerr << "Values are not the same" << endl;
+                            cout << "Particle: " << p->getPosition() << endl;
+                            cout << "Vector: " << Vector3f(i, j, k) << endl;
+                        }
+                        g.p[1] = Vector3f(p->getPosition());
+                        g.val[1] = p->getDensity();
+
+                        p = grid[x2][y1][z2];
+                        if(p->getDistance(Vector3f(i + GRID, j, k + GRID)) != 0 ){
+                            cerr << "Values are not the same" << endl;
+                            cout << "Particle: " << p->getPosition() << endl;
+                            cout << "Vector: " << Vector3f(i, j, k) << endl;
+                        }
+                        g.p[2] = Vector3f(p->getPosition());
+                        g.val[2] = p->getDensity();
+
+                        p = grid[x1][y1][z2];
+                        if(p->getDistance(Vector3f(i, j, k + GRID)) != 0 ){
+                            cerr << "Values are not the same" << endl;
+                            cout << "Particle: " << p->getPosition() << endl;
+                            cout << "Vector: " << Vector3f(i, j, k) << endl;
+                        }
+                        g.p[3] = Vector3f(p->getPosition());
+                        g.val[3] = p->getDensity();
+
+                        p = grid[x1][y2][z1];
+                        if(p->getDistance(Vector3f(i, j + GRID, k)) != 0 ){
+                            cerr << "Values are not the same" << endl;
+                            cout << "Particle: " << p->getPosition() << endl;
+                            cout << "Vector: " << Vector3f(i, j, k) << endl;
+                        }
+                        g.p[4] = Vector3f(p->getPosition());
+                        g.val[4] = p->getDensity();
+
+                        p = grid[x2][y2][z1];
+                        if(p->getDistance(Vector3f(i + GRID, j + GRID, k)) != 0 ){
+                            cerr << "Values are not the same" << endl;
+                            cout << "Particle: " << p->getPosition() << endl;
+                            cout << "Vector: " << Vector3f(i, j, k) << endl;
+                        }
+                        g.p[5] = Vector3f(p->getPosition());
+                        g.val[5] = p->getDensity();
+
+                        p = grid[x2][y2][z2];
+                        if(p->getDistance(Vector3f(i+ GRID, j + GRID, k + GRID)) != 0 ){
+                            cerr << "Values are not the same" << endl;
+                            cout << "Particle: " << p->getPosition() << endl;
+                            cout << "Vector: " << Vector3f(i, j, k) << endl;
+                        }
+                        g.p[6] = Vector3f(p->getPosition());
+                        g.val[6] = p->getDensity();
+
+                        p = grid[x1][y2][z2];
+                        if(p->getDistance(Vector3f(i, j + GRID, k+ GRID)) != 0 ){
+                            cerr << "Values are not the same" << endl;
+                            cout << "Particle: " << p->getPosition() << endl;
+                            cout << "Vector: " << Vector3f(i, j, k) << endl;
+                        }
+                        g.p[7] = Vector3f(p->getPosition());
+                        g.val[7] = p->getDensity();
+
+
+
+                        // glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+                        // glBegin(GL_QUADS); //bottom
+                        //     glColor4f(0.1, 0.8, 0.6, 0.8);//235/255.0, 244/255.0, 250/255.0, 1.0);
+                        //     glVertex3d(convert(g.p[0].x(), WIDTH), convert(g.p[0].y(), HEIGHT), convert(g.p[0].z(), LENGTH));
+                        //     glVertex3d(convert(g.p[3].x(), WIDTH), convert(g.p[3].y(), HEIGHT), convert(g.p[3].z(), LENGTH));
+                        //     glVertex3d(convert(g.p[7].x(), WIDTH), convert(g.p[7].y(), HEIGHT), convert(g.p[7].z(), LENGTH));
+                        //     glVertex3d(convert(g.p[4].x(), WIDTH), convert(g.p[4].y(), HEIGHT), convert(g.p[4].z(), LENGTH));
+                        // glEnd();
+
+                        // glBegin(GL_QUADS); //bottom
+                        //     glVertex3d(convert(g.p[4].x(), WIDTH), convert(g.p[4].y(), HEIGHT), convert(g.p[4].z(), LENGTH));
+                        //     glVertex3d(convert(g.p[5].x(), WIDTH), convert(g.p[5].y(), HEIGHT), convert(g.p[5].z(), LENGTH));
+                        //     glVertex3d(convert(g.p[6].x(), WIDTH), convert(g.p[6].y(), HEIGHT), convert(g.p[6].z(), LENGTH));
+                        //     glVertex3d(convert(g.p[7].x(), WIDTH), convert(g.p[7].y(), HEIGHT), convert(g.p[7].z(), LENGTH));
+                        // glEnd();
+                        // glPolygonMode( GL_FRONT_AND_BACK, GL_FILL);
+
+                        cubes->polygonise(g, 0.005001);
+
+
+
+                    }
+                }
+            }
+        }
         //second iteration of particles and only their neighbors
         #pragma omp parallel for
         for(int i = 0; i < particles->size(); i++){
@@ -153,7 +295,7 @@ void Scene::render(){
             //cout << "1. " << particle->getVelocity() << endl;
             Vector3f newVelocity = velocity + DELTAT * acceleration;  //maybe implement some kind of terminal velocity?
             //cout << "2. " << velocity << endl;
-            Vector3f newPosition = position + DELTAT * velocity;
+            Vector3f newPosition = position + DELTAT * newVelocity;
 
             //Boundary check next position
             // int c = 0.1;
@@ -234,20 +376,20 @@ void Scene::render(){
              //if(bounce) velocity *= -1;
 
             bool bound = false;
-            double cr = 0;
+            double c = -0.3;
             Vector3f collNorm = Vector3f::Zero();
             //if(t < 100 ){
                 if(newPosition.y() - EPSILON < BOTTOM){
-                    double boundTime = (position.y() - (BOTTOM)) / velocity.norm();
-                    //cout << boundTime << endl;  //maybe boundTime = min(boundTime, DELTA);
-                    Vector3f collision = position + boundTime * velocity;
-                    // cout << "collision: " << collision << endl;
-                    collNorm << 0, 1, 0;
-                    double penDist = (newPosition - collision).norm();
-                    //cout << penDist << endl;
-                    // cout << "1. " << newPosition << endl;
-                    newPosition = newPosition + penDist * collNorm;
-                    newVelocity *= -0.01;
+                    // double boundTime = (position.y() - (BOTTOM)) / velocity.norm();
+                    // //cout << boundTime << endl;  //maybe boundTime = min(boundTime, DELTA);
+                    // Vector3f collision = position + boundTime * velocity;
+                    // // cout << "collision: " << collision << endl;
+                    // collNorm << 0, 1, 0;
+                    // double penDist = (newPosition - collision).norm();
+                    // //cout << penDist << endl;
+                    // // cout << "1. " << newPosition << endl;
+                    // newPosition = newPosition + penDist * collNorm;
+                    // bound = true;
                     // velocity = velocity - ( 1 + cr) * (velocity.dot(collNorm) * collNorm);
                     // cout << "2. " << newPosition << endl;
                     // bound = true;
@@ -255,6 +397,9 @@ void Scene::render(){
                     // while(newPosition.y() - EPSILON < BOTTOM){
                     //     newPosition = newPosition + velocity * DELTAT;
                     // }
+                    double d = abs(newPosition.y() - BOTTOM);
+                    newPosition = Vector3f(newPosition.x(), newPosition.y() + d, newPosition.z());
+                    newVelocity = Vector3f(newVelocity.x(), newVelocity.y() * c, newVelocity.z());
                 }
                 if(newPosition.y() + EPSILON > TOP){
                     double boundTime = (-position.y() + (TOP)) / velocity.norm();
@@ -421,6 +566,7 @@ double Scene::convert(double point, double comp){
     return point;
 }
 
+Particle::Particle(){}
 
 Particle::Particle(double m, Vector3f p, Vector3f v){
     mass = m;

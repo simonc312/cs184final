@@ -4,6 +4,11 @@
 
 Viewport    viewport;
 Scene *s;
+int rotAngleY = 0;
+int rotAngleX = 0;
+double transX = 0.0;
+double transY = 0.0;
+double transZ = -4.5;
 
 //****************************************************
 // reshape viewport if the window is resized
@@ -76,8 +81,15 @@ void myDisplay() {
     glMaterialfv(GL_FRONT, GL_DIFFUSE, diffuse);
     glMaterialfv(GL_FRONT, GL_SPECULAR, specular);
     glMaterialf(GL_FRONT, GL_SHININESS, shine);
+    glPushMatrix(); // put current matrix on stack
 
-    s->render();
+      glTranslatef(transX, 0.0f, transZ);
+      glTranslatef(0.0f, transY, transZ);
+
+      glRotatef(rotAngleY, 0.0f, 1.0f, 0.0f);
+      glRotatef(rotAngleX, 1.0f, 0.0f, 0.0f);
+
+      s->render();
     glFlush();
     glutSwapBuffers();
     glPopMatrix();
@@ -85,16 +97,41 @@ void myDisplay() {
 }
 
 void myKeyboard(unsigned char key, int x, int y){
-    if(key == ' ')
-        exit(0);
+  if(key == ' ')
+    exit(0);
+  if(key == '+')
+    transZ += 1.5;
+  if(key == '-')
+    transZ -= 1.5;
+  myDisplay();
 }
 
+void mySpecialKey(int key, int x, int y){
+  int mod = glutGetModifiers();
+  double transAmount = 0.1;
+  if(mod == GLUT_ACTIVE_SHIFT){
+    if(key == GLUT_KEY_LEFT) transX -= transAmount;
+    if(key == GLUT_KEY_RIGHT) transX += transAmount;
+    if(key == GLUT_KEY_UP) transY += transAmount;
+    if(key == GLUT_KEY_DOWN) transY -= transAmount;
+  }
+  else{ //weird issues with up down transform where it'll go back on itself, might be openGL
+    double rotateAmount = 10.0;
+    if(key == GLUT_KEY_LEFT) rotAngleY -= rotateAmount;
+    if(key == GLUT_KEY_RIGHT) rotAngleY+= rotateAmount;
+    if(key == GLUT_KEY_UP) rotAngleX-=rotateAmount;
+    if(key == GLUT_KEY_DOWN) rotAngleX+=rotateAmount;
+  }
+  myDisplay();
+}
 
 int main(int argc, char* argv[]){
     int maxParticles = atoi(argv[1]);
     double timeStep = atof(argv[2]);
     double stepSize = 0.1;
-    s = new Scene(maxParticles, timeStep, stepSize);
+    int march = 0;
+    march = atoi(argv[3]);
+    s = new Scene(maxParticles, timeStep, stepSize, march);
     glutInit(&argc, argv);
 
     //This tells glut to use a double-buffered window with red, green, and blue channels
@@ -127,6 +164,8 @@ int main(int argc, char* argv[]){
     glutDisplayFunc(myDisplay);               // function to run when its time to draw something
     glutReshapeFunc(myReshape);               // function to run when the window gets resized
     glutKeyboardFunc(myKeyboard);
+      glutSpecialFunc(mySpecialKey);
+
 
     glutMainLoop();                           // infinite loop that will keep drawing and resizing
     // and whatever else
