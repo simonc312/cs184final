@@ -1,9 +1,4 @@
-//ffmpg
 #include "fluid.h"
-
-//PROBLEMS: particles collect in the back, maybe something to do with using bottom left FRONT vertex as reference; those particles lose getting referred to
-//improve marching cubes
-
 
 Scene::Scene(int p, double t, double s, int m){
     maxParts = p;
@@ -26,7 +21,6 @@ Scene::Scene(int p, double t, double s, int m){
             grids[i][j] = new GRIDCELL[z];
         }
     }
-    // cout << "HERE-2" << endl;
 
     init();
 }
@@ -34,20 +28,6 @@ Scene::Scene(int p, double t, double s, int m){
 void Scene::init(){
     srand(time(NULL));
 
-    // for(int i = 0; i < GRIDX + 1; i++){
-    //     for(int j = 0; j < GRIDY + 1; j++){
-    //         for(int k = 0; k < GRIDZ + 1; k++){
-    //             Particle * particle = new Particle(0, Vector3f(i * GRID + LEFT, j * GRID + BOTTOM, k * GRID + BACK), Vector3f(0, 0, 0));
-    //             int gridX = floor((particle->getPosition().x() - LEFT)/GRID);
-    //             int gridY = floor((particle->getPosition().y() - BOTTOM)/GRID);
-    //             int gridZ = abs(floor((particle->getPosition().z() - FRONT)/GRID));
-    //             // grids[i][j][k].vParts
-    //             grids[gridX][gridY][gridZ].particles.push_back(particle);
-    //             particles->push_back(particle);
-    //         }
-    //     }
-    // }
-    // cout << "HERE-1.5" << endl;
     for(int i= 0 ; i < maxParts; i ++){
             double x = fRand(375, 415);
             double y = fRand(475, 625);
@@ -62,7 +42,6 @@ void Scene::init(){
             grids[gridX][gridY][gridZ].particles.push_back(p);
             particles->push_back(p);
     }
-    // cout << particles->size() << endl;
 }
 
 
@@ -83,10 +62,7 @@ void Scene::render(){
 
         //density calculations
         vector<vector<Particle * > > neighbors;
-        // double totalDens = 0;
-        // cout << "HERE0" << endl;
         for(int i = 0; i < particles->size(); i++){  //for every particle
-            //cout << omp_get_num_threads() << endl;
             Particle *particle = particles->at(i);
             double density = MASS;
             vector<Particle *> findNeighs;
@@ -99,7 +75,6 @@ void Scene::render(){
                     for(int z = BBmin.z(); z <= BBmax.z(); z++){
 
                         if(x >= 0 && y >= 0 && z >= 0 && x <= GRIDX && y <= GRIDY && z <= GRIDZ){
-                            // cout << "HERE " << endl;
                             vector<Particle *> gridParticles = grids[x][y][z].particles;
 
                             for(int j = 0; j < gridParticles.size(); j++){
@@ -120,11 +95,8 @@ void Scene::render(){
             #pragma omp critical
             {
             neighbors.push_back(findNeighs);
-            // totalDens += density;
             }
         }
-                    // cout << "HERE1" << endl;
-        // cout << totalDens/particles->size() << endl;
 
         //Marching Cubes
         if(march == 1){
@@ -132,8 +104,6 @@ void Scene::render(){
             int x = GRIDX + 1;
             int y = GRIDY + 1;
             int z = GRIDZ + 1;
-            // cout << "HERE" << endl;
-            // cout << x << " " << y << " " << z << endl;
 
             Particle **** grid;
             grid = new Particle***[x];
@@ -145,8 +115,8 @@ void Scene::render(){
                     grid[i][j] = new Particle*[z];
                 }
             }
-            // cout << "HERE2" << endl;
 
+            //density calculations for ghost particles
             double totalDens = 0;
             int count = 0;
             for(int i = 0; i < x; i++){
@@ -191,7 +161,7 @@ void Scene::render(){
             }
 
 
-
+            //forming the gridcell
             for(int i = LEFT; i < RIGHT; i += GRID){
                 for(int j = BOTTOM; j < TOP; j += GRID){
                     for(int k = BACK; k < FRONT; k +=GRID){
@@ -277,9 +247,6 @@ void Scene::render(){
                         g.val[7] = p->getDensity();
 
                         cubes->polygonise(g, totalDens/count);
-
-
-
                     }
                 }
             }
@@ -291,15 +258,9 @@ void Scene::render(){
         for(int i = 0; i < particles->size(); i++){
             Particle *particle = particles->at(i);
 
-            // if(particle->getMass() == 0){ //Particle mass is 0 if it is a vertex particle; we don't want to calculate forces for it
-            //     continue;
-            // }
-
             Vector3f position = particle->getPosition();
             Vector3f velocity = particle->getVelocity();
-            // cout << position << endl << endl;
 
-            //http://stackoverflow.com/questions/17565664/gluproject-and-2d-display
             //Render particle
             if(march == 0){
                 GLdouble posX, posY, posZ;//3D point
@@ -312,6 +273,7 @@ void Scene::render(){
                     glutSolidSphere(SRADIUS, 10, 10);
                 glPopMatrix();
             }
+
             //Force calculations
             Vector3f viscosityForce = Vector3f::Zero();
             Vector3f pressureForce = Vector3f::Zero();
@@ -320,19 +282,18 @@ void Scene::render(){
             double pressureJ = particle->calcPressure();
 
             vector<Particle * > curNeighs = neighbors[i];
-            // cout << curNeighs.size() << endl;
-            // cout << "particle " << i << " num neighbors" << curNeighs.size() << endl;
-            for(int j = 0; j < curNeighs.size(); j++){//currNeighs.size(); j++){
 
-                Particle *tempParticle = curNeighs[j];// currNeighs[j]->p;
+            for(int j = 0; j < curNeighs.size(); j++){
+
+                Particle *tempParticle = curNeighs[j];
                 double tempMass = tempParticle->getMass();
                 double tempDens = tempParticle->getDensity();
                 Vector3f tempVel = tempParticle->getVelocity();
                 double dist = particle->getDistance(*tempParticle);
                 double kern = particle->getKernel(dist);
-                // cout << "dist: " << dist << "\npos: " << position << "\ntempPos: " << tempParticle->getPosition() << endl;
 
                 if(dist != 0){
+
                     //Pressure
                     Vector3f rij = tempParticle->getPosition() - position;
                     Vector3f kernDerive = particle->getKernDerive(dist, rij);
@@ -348,7 +309,6 @@ void Scene::render(){
                     colorField += tempMass / tempDens * kernSecond;
                 }
             }
-            // cout << surfaceNormal << endl;
             pressureForce *= -1;
             viscosityForce *= VISC;
 
@@ -357,19 +317,11 @@ void Scene::render(){
 
             //Update next position
             Vector3f totalForce = gravityForce + pressureForce + viscosityForce;
-            //cout << "vForce: " << viscosityForce << endl;
             if (surfaceNormal.norm() >= 0.00001)
                 totalForce += surfaceTension;
-            //cout << "totalForce: " << totalForce << endl;
             Vector3f acceleration = totalForce/particle->getDensity();
-            //cout << "1. " << particle->getVelocity() << endl;
-            Vector3f newVelocity = velocity + DELTAT * acceleration;  //maybe implement some kind of terminal velocity?
-            //cout << "2. " << velocity << endl;
+            Vector3f newVelocity = velocity + DELTAT * acceleration;
             Vector3f newPosition = position + DELTAT * newVelocity;
-
-            // cout << "HERE2" << endl;
-
-
 
             //Boundary checks
             double c = -0.3;
@@ -403,7 +355,7 @@ void Scene::render(){
                 newPosition = Vector3f(newPosition.x(), newPosition.y(), newPosition.z() - d);
                 newVelocity = Vector3f(newVelocity.x(), newVelocity.y(), newVelocity.z() * c);
             }
-                        Vector3f gridPos((newPosition.x() - LEFT)/GRID, (newPosition.y() - BOTTOM)/GRID, abs((newPosition.z() - FRONT)/GRID));
+            Vector3f gridPos((newPosition.x() - LEFT)/GRID, (newPosition.y() - BOTTOM)/GRID, abs((newPosition.z() - FRONT)/GRID));
 
             if(!(gridPos.x() >= 0 && gridPos.y() >= 0 && gridPos.z() >= 0 && gridPos.x() <= GRIDX && gridPos.y() <= GRIDY && gridPos.z() <= GRIDZ)) {
                 cout << "gridPos: " << gridPos << endl;
@@ -423,47 +375,24 @@ void Scene::render(){
         glutSwapBuffers();
         glPopMatrix();
 
-        // cout << "HERE3" << endl;
-
         //Clear particle in current grids
         for(int i = 0; i < GRIDX; i++){
             for(int j = 0; j < GRIDY; j++){
                 for(int k = 0; k < GRIDZ; k++){
                     grids[i][j][k].particles.clear();
-                    // vector<Particle * > particles = grids[i][j][k].particles;
-                    // int l = 0;
-                    // for(vector<Particle *>::iterator it = particles.begin(); it != particles.end();) {   //Delete only particles with mass from GRIDCELL; particles without mass are vertex particles
-                    //     if(particles[l]->getMass() != 0){
-                    //         it = particles.erase(it);
-                    //     } else{
-                    //         ++it;
-                    //         ++l;
-                    //     }
-                    // }
                 }
             }
         }
-        //cout << "HERE1" << endl;
-        // cout << "HERE4" << endl;
 
         //Update particles in each grid
         for(int i = 0; i < particles->size(); i++){
-            // cout << "i: " << i << " size: " << particles->size() << endl;
-            // cout << "HERE1" << endl;
             Particle *particle = particles->at(i);
-            // if(particle->getMass() != 0){
             Vector3f position = particle->getPosition();
-            // cout << position << endl << endl;
             int gridX = floor((position.x() - LEFT)/GRID);
             int gridY = floor((position.y() - BOTTOM)/GRID);
             int gridZ = abs(floor((position.z() - FRONT)/GRID));
-            //cout << "HERE2" << endl;
             particle->setGridPosition(Vector3f(gridX, gridY, gridZ));
-            // cout << "HERE3" << endl;
-            // cout << gridX << " " << gridY << " " << gridZ << endl;
             grids[gridX][gridY][gridZ].particles.push_back(particle);
-            //cout << "HERE4" << endl;
-            // }
         }
     }
 }
@@ -476,7 +405,7 @@ void Scene::drawBoundaries(){
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glBegin(GL_QUADS); //bottom
-            glColor4f(0.1, 0.8, 0.6, 0.8);//235/255.0, 244/255.0, 250/255.0, 1.0);
+            glColor4f(0.1, 0.8, 0.6, 0.8);
             glVertex3d(convert(LEFT, WIDTH), convert(BOTTOM, HEIGHT), convert(FRONT, LENGTH));
             glVertex3d(convert(RIGHT, WIDTH), convert(BOTTOM, HEIGHT), convert(FRONT, LENGTH));
             glVertex3d(convert(RIGHT, WIDTH), convert(BOTTOM, HEIGHT), convert(BACK, LENGTH));
@@ -489,7 +418,6 @@ void Scene::drawBoundaries(){
             glVertex3d(convert(LEFT, WIDTH), convert(TOP, HEIGHT), convert(BACK, LENGTH));
         glEnd();
         glBegin(GL_QUADS); //left
-                // glColor3f(0.0, 1.0, 0.0);
             glVertex3d(convert(LEFT, WIDTH), convert(BOTTOM, HEIGHT), convert(FRONT, LENGTH));
             glVertex3d(convert(LEFT, WIDTH), convert(BOTTOM, HEIGHT), convert(BACK, LENGTH));
             glVertex3d(convert(LEFT, WIDTH), convert(TOP, HEIGHT), convert(BACK, LENGTH));

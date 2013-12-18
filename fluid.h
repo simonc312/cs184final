@@ -35,28 +35,6 @@
 
 #define _USE_MATH_DEFINES
 
-// #define MAXINITPART 1
-// #define MASS 10
-// #define BPP 24
-// #define H 20
-// #define GRAVITY -10
-// #define IDEALDENSITY 275
-// #define STIFFNESS 100
-// #define VISC 20
-// #define DELTAT 0.2
-// #define RADIUS 4
-
-// #define MAXINITPART 1
-// #define MASS 0.2// 0.002
-// #define BPP 24
-// #define H 0.25//0.0625
-// #define GRAVITY -20
-// #define IDEALDENSITY 250//3.5
-// #define STIFFNESS 500//0.2//0.4
-// #define VISC 20//1
-// #define DELTAT 0.1//0.01
-// #define RADIUS 4//0.01
-
 #define MAXINITPART 1
 #define MASS 0.2
 #define BPP 24
@@ -86,12 +64,6 @@
 #define GRIDY  (TOP - BOTTOM)/GRID
 #define GRIDZ  (abs(BACK - FRONT))/GRID
 
-
-//pos: 385.098
-// 718.953
-// -54.3848
-
-
 using namespace Eigen;
 using namespace std;
 
@@ -114,15 +86,10 @@ typedef struct neighbourAndDist{
     double dist;
 } neighbourAndDist;
 
-// typedef struct {
-//    Vector3f p[3];
-// } TRIANGLE;
-
 typedef struct {
    Vector3f p[8];
    double val[8];
    vector<Particle * > particles;
-   // Particle * vParts[8];
 } GRIDCELL;
 
 
@@ -194,5 +161,5 @@ public:
     Cubes();
     Vector3f VertexInterp(double isolevel, Vector3f p1, Vector3f p2, double valp1, double valp2);
     double convert(double point, double comp);
-    int polygonise(GRIDCELL grid,double isolevel);//,TRIANGLE *triangles);
+    int polygonise(GRIDCELL grid,double isolevel);
 };

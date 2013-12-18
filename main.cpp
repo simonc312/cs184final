@@ -21,15 +21,6 @@ void myReshape(int w, int h) {
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
   gluPerspective (60, (float)w/(float)h, 0.01f, (float)LENGTH);
-  // glTranslatef(0.0, 100.0, 0.0);
-  // glRotatef(90.0, 0.0, 1.0, 0.0);
-
-  //glOrtho(0, WIDTH, 0, HEIGHT, -1.0, LENGTH);
-
-  //glMatrixMode(GL_MODELVIEW);
-  //glLoadIdentity();
-          // gluLookAt (100.0, 0.0, -3.0, 0.0, 0.0, -5.0 , 1.0, 0.0, 0.0);
-
 }
 
 //****************************************************

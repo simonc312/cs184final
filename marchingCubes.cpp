@@ -341,13 +341,9 @@ int triTable[256][16] =
    if (grid.val[5] < isolevel) cubeindex |= 32;
    if (grid.val[6] < isolevel) cubeindex |= 64;
    if (grid.val[7] < isolevel) cubeindex |= 128;
-   // if(cubeindex != 255){
-   //    cout << cubeindex << endl;
-   // }
 
    /* Cube is entirely in/out of the surface */
    if (edgeTable[cubeindex] == 0){
-      //cout << "0" << endl;
       return(0);
    }
 
@@ -412,20 +408,7 @@ int triTable[256][16] =
          VertexInterp(isolevel,grid.p[3],grid.p[7],grid.val[3],grid.val[7]);
    }
 
-   /* Create the triangle */
-   // ntriang = 0;
-   // for (i=0;triTable[cubeindex][i]!=-1;i+=3) {
-   //    triangles[ntriang].p[0] = vertlist[triTable[cubeindex][i  ]];
-   //    triangles[ntriang].p[1] = vertlist[triTable[cubeindex][i+1]];
-   //    triangles[ntriang].p[2] = vertlist[triTable[cubeindex][i+2]];
-   //    ntriang++;
-   // }
-
-   // return(ntriang);
-
    for(i = 0; triTable[cubeindex][i] != -1; i+=3){
-      // glDisable(GL_LIGHTING);
-      // glColor4f(1.0, 0.0, 0.0, 0.3);
       glBegin(GL_TRIANGLES);
       for(int j = 0; j < 3; j++){
 
@@ -439,7 +422,6 @@ int triTable[256][16] =
       glEnd();
 
    }
-         // glEnable(GL_LIGHTING);
 }
 
 double Cubes::convert(double point, double comp){
