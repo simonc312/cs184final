@@ -27,7 +27,7 @@ Scene::Scene(int p, double t, double s, int m){
 
 void Scene::init(){
     srand(time(NULL));
-
+    #pragma omp for
     for(int i= 0 ; i < maxParts; i ++){
             double x = fRand(375, 415);
             double y = fRand(475, 625);
@@ -39,8 +39,11 @@ void Scene::init(){
             int gridZ = floor(abs((z - FRONT)/GRID));
             Particle *p = new Particle(MASS, pos, Vector3f(0, 0, 0));
             p->setGridPosition(Vector3f(gridX, gridY, gridZ));
+        #pragma omp critical
+        {   
             grids[gridX][gridY][gridZ].particles.push_back(p);
             particles->push_back(p);
+        }
     }
 }
 
@@ -61,7 +64,8 @@ void Scene::render(){
         drawBoundaries();
 
         //density calculations
-        vector<vector<Particle * > > neighbors;
+        vector<vector<Particle * > > neighbors; neighbors.resize(particles->size());
+        #pragma omp for
         for(int i = 0; i < particles->size(); i++){  //for every particle
             Particle *particle = particles->at(i);
             double density = MASS;
@@ -94,7 +98,7 @@ void Scene::render(){
             particle->setDensity(density);
             #pragma omp critical
             {
-            neighbors.push_back(findNeighs);
+            neighbors[i]=(findNeighs);
             }
         }
 
@@ -121,9 +125,10 @@ void Scene::render(){
             int count = 0;
             for(int i = 0; i < x; i++){
                 for(int j = 0; j < y; j++){
+                    #pragma omp for
                     for(int k = 0; k < z; k++){
                         Particle* particle = new Particle(MASS, Vector3f(i  * GRID + LEFT, j * GRID + BOTTOM, k * GRID + BACK), Vector3f(0, 0, 0));
-                        count ++;
+                        
                         double density = MASS;
                         Vector3f gridPos((particle->getPosition().x() - LEFT)/GRID, (particle->getPosition().y() - BOTTOM)/GRID, abs((particle->getPosition().z() - FRONT)/GRID));
                         // cout << gridPos << endl << endl;
@@ -153,7 +158,12 @@ void Scene::render(){
                             }
                         }
                         particle->setDensity(density);
-                        totalDens += density;
+                        #pragma omp critical
+                        {
+                            count ++;
+                            totalDens += density;
+                        }
+                        
                         // cout << totalDens/count << endl;
                         grid[i][j][k] = particle;
                     }
@@ -164,6 +174,7 @@ void Scene::render(){
             //forming the gridcell
             for(int i = LEFT; i < RIGHT; i += GRID){
                 for(int j = BOTTOM; j < TOP; j += GRID){
+                    #pragma omp for
                     for(int k = BACK; k < FRONT; k +=GRID){
                         // cout << "HERE" << endl;
                         GRIDCELL g;
@@ -255,6 +266,7 @@ void Scene::render(){
 
         //second iteration of particles and only their neighbors
         //#pragma omp parallel for
+        #pragma omp for
         for(int i = 0; i < particles->size(); i++){
             Particle *particle = particles->at(i);
 
