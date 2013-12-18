@@ -723,6 +723,77 @@ To determine whether a vertex was underneath the isosurface, we use the
 Results
 \end_layout
 
+\begin_layout Standard
+In our original naive implementation (without the spatial gridcells), computatio
+n time was very, very slow.
+ For example, to render 
+\begin_inset Formula $200$
+\end_inset
+
+ time steps of
+\begin_inset Formula $5000$
+\end_inset
+
+ particles, it took around 
+\begin_inset Formula $2$
+\end_inset
+
+ hours and 
+\begin_inset Formula $50$
+\end_inset
+
+ minutes, averaging at about 
+\begin_inset Formula $51$
+\end_inset
+
+ seconds per timestep.
+ This rendering time is very undesirable, so we set out to improve the runtime.
+ After successfully implementing our spatial gridcells, we managed to cut
+ down runtime dramatically.
+ Now, to render 
+\begin_inset Formula $200$
+\end_inset
+
+ time steps of 
+\begin_inset Formula $5000$
+\end_inset
+
+ particles, it took 
+\begin_inset Formula $5$
+\end_inset
+
+ minutes and 
+\begin_inset Formula $15$
+\end_inset
+
+ seconds, with an average of 
+\begin_inset Formula $1.575$
+\end_inset
+
+ seconds per timestep.
+ In a different instance, it took 
+\begin_inset Formula $22$
+\end_inset
+
+ minutes and 
+\begin_inset Formula $33$
+\end_inset
+
+ seconds to render 
+\begin_inset Formula $300$
+\end_inset
+
+ time steps of 
+\begin_inset Formula $20,000$
+\end_inset
+
+ particles, averaging to 
+\begin_inset Formula $4.51$
+\end_inset
+
+ seconds per time step.
+\end_layout
+
 \begin_layout Section*
 Conclusion
 \end_layout
@@ -755,22 +826,6 @@ References
 \end_layout
 
 \begin_layout Standard
-Kelager, M., 
-\begin_inset Quotes eld
-\end_inset
-
-Lagrangian Fluid Dynamics Using Smoothed Particle Hydrodynamics,
-\begin_inset Quotes erd
-\end_inset
-
- 
-\emph on
-Department of Computer Science, University of Copenhagen, 
-\emph default
-January 9th, 2006.
-\end_layout
-
-\begin_layout Standard
 Bourke, Paul, 
 \begin_inset Quotes eld
 \end_inset
@@ -796,6 +851,22 @@ Fluid Simulation for Video Games (part 15),
 Intel Developer Zone, 
 \emph default
 January 23, 2013.
+\end_layout
+
+\begin_layout Standard
+Kelager, M., 
+\begin_inset Quotes eld
+\end_inset
+
+Lagrangian Fluid Dynamics Using Smoothed Particle Hydrodynamics,
+\begin_inset Quotes erd
+\end_inset
+
+ 
+\emph on
+Department of Computer Science, University of Copenhagen, 
+\emph default
+January 9th, 2006.
 \end_layout
 
 \end_body

@@ -164,6 +164,7 @@ void Scene::render(){
             //forming the gridcell
             for(int i = LEFT; i < RIGHT; i += GRID){
                 for(int j = BOTTOM; j < TOP; j += GRID){
+                    // #pragma omp parallel for
                     for(int k = BACK; k < FRONT; k +=GRID){
                         // cout << "HERE" << endl;
                         GRIDCELL g;
@@ -327,7 +328,7 @@ void Scene::render(){
             double c = -0.3;
             if(newPosition.y() - EPSILON < BOTTOM){
                 double d = abs(newPosition.y() - BOTTOM);
-                newPosition = Vector3f(newPosition.x(), BOTTOM + EPSILON, newPosition.z());
+                newPosition = Vector3f(newPosition.x(), newPosition.y() + d, newPosition.z());
                 newVelocity = Vector3f(newVelocity.x(), newVelocity.y() * c, newVelocity.z());
             }
             if(newPosition.y() + EPSILON > TOP){
