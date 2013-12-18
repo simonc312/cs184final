@@ -64,7 +64,8 @@ void Scene::render(){
         drawBoundaries();
 
         //density calculations
-        vector<vector<Particle * > > neighbors; neighbors.resize(particles->size());
+        vector<vector<Particle * > > neighbors; 
+        neighbors.resize(particles->size());
         #pragma omp for
         for(int i = 0; i < particles->size(); i++){  //for every particle
             Particle *particle = particles->at(i);
@@ -329,7 +330,7 @@ void Scene::render(){
 
             //Update next position
             Vector3f totalForce = gravityForce + pressureForce + viscosityForce;
-            if (surfaceNormal.norm() >= 0.00001)
+            if (surfaceNormal.norm() >= 0.01)
                 totalForce += surfaceTension;
             Vector3f acceleration = totalForce/particle->getDensity();
             Vector3f newVelocity = velocity + DELTAT * acceleration;
@@ -564,8 +565,8 @@ double Particle::getKernel(double r){
 
 Vector3f Particle::getKernDerive(double r, Vector3f rij){
     double c = -45 / (M_PI * pow((double) H, 6.0));
-    if (r == 0){
-        r = 0.001;
+    if (r < RADIUS){
+        r = 2*RADIUS - r;
     }
     return c * (rij / r) * (pow(H - r, 2));
 }
