@@ -56,15 +56,19 @@ void myDisplay() {
     GLfloat ambient0[]={0.1, 0.1, 0.1, 1.0};
     GLfloat specular0[]={0.6, 0.6, 0.6, 1.0};
     GLfloat light0_pos[]={1.0, 1.0, -0.5, 0.0};
-
     glEnable(GL_LIGHT0);
     glLightfv(GL_LIGHT0, GL_POSITION, light0_pos);
     glLightfv(GL_LIGHT0, GL_AMBIENT, ambient0);
     glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse0);
     glLightfv(GL_LIGHT0, GL_SPECULAR, specular0);
 
+
+
+    // GLfloat diffuse0[]={0.2, 0.2, 0.2, 1.0};
+    // GLfloat ambient0[]={0.1, 0.1, 0.1, 1.0};
+    // GLfloat specular0[]={0.6, 0.6, 0.6, 1.0};
     glEnable(GL_LIGHT1);
-    GLfloat light1_pos[]={-3.0, 0.0, 4.0, 1.0};
+    GLfloat light1_pos[]={0.0, 1.0, 0.0, 1.0};
 
     glLightfv(GL_LIGHT1, GL_POSITION, light1_pos);
     glLightfv(GL_LIGHT1, GL_AMBIENT, ambient0);
@@ -72,9 +76,9 @@ void myDisplay() {
     glLightfv(GL_LIGHT1, GL_SPECULAR, specular0);
   glPushMatrix(); // put current matrix on stack
 
-    GLfloat ambient[] = {0.2, 0.2, 0.2, 0.6};
-    GLfloat diffuse[] = {0.0, 0.9, 1.0, 0.9};
-    GLfloat specular[] = {1.0, 1.0, 1.0, 0.6};
+    GLfloat ambient[] = {0.2, 0.2, 0.2, 1.0};
+    GLfloat diffuse[] = {93/255.0, 170/255.0, 231/255.0, 0.9};
+    GLfloat specular[] = {1.0, 1.0, 1.0, 1.0};
     GLfloat shine = 100.0;
 
     glMaterialfv(GL_FRONT, GL_AMBIENT, ambient);
@@ -155,7 +159,7 @@ int main(int argc, char* argv[]){
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    GLfloat global_ambient[] = { 0.0f, 0.0f, 0.9f, 1.0f };
+    GLfloat global_ambient[] = { 0.0f, 0.5f, 1.0f, 1.0f };
     glLightModelfv(GL_LIGHT_MODEL_AMBIENT, global_ambient);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_NORMALIZE);

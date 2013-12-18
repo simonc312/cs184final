@@ -424,8 +424,8 @@ int triTable[256][16] =
    // return(ntriang);
 
    for(i = 0; triTable[cubeindex][i] != -1; i+=3){
-      glDisable(GL_LIGHTING);
-      glColor4f(1.0, 0.0, 0.0, 1.0);
+      // glDisable(GL_LIGHTING);
+      // glColor4f(1.0, 0.0, 0.0, 0.3);
       glBegin(GL_TRIANGLES);
       for(int j = 0; j < 3; j++){
 
@@ -439,7 +439,7 @@ int triTable[256][16] =
       glEnd();
 
    }
-         glEnable(GL_LIGHTING);
+         // glEnable(GL_LIGHTING);
 }
 
 double Cubes::convert(double point, double comp){

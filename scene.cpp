@@ -1,6 +1,9 @@
 //ffmpg
 #include "fluid.h"
 
+//PROBLEMS: particles collect in the back, maybe something to do with using bottom left FRONT vertex as reference; those particles lose getting referred to
+//improve marching cubes
+
 
 Scene::Scene(int p, double t, double s, int m){
     maxParts = p;
@@ -8,8 +11,6 @@ Scene::Scene(int p, double t, double s, int m){
     step = s;
     march = m;
     particles = new vector<Particle *>();
-    //spatialHashTable= new tr1::unordered_map<Vector3f,Particle *,hash_function>();
-    spatialHashTable.max_load_factor(1);
     film = new Film(WIDTH, HEIGHT);
     cubes = new Cubes();
 
@@ -25,54 +26,43 @@ Scene::Scene(int p, double t, double s, int m){
             grids[i][j] = new GRIDCELL[z];
         }
     }
+    // cout << "HERE-2" << endl;
 
     init();
-}
-
-int hash_function(Vector3f pos){
-    return  (((int)pos.x()*73856093) xor ((int)pos.y()*19349663) xor ((int)pos.z()*83492791)) % (2*(100)+1);
 }
 
 void Scene::init(){
     srand(time(NULL));
 
+    // for(int i = 0; i < GRIDX + 1; i++){
+    //     for(int j = 0; j < GRIDY + 1; j++){
+    //         for(int k = 0; k < GRIDZ + 1; k++){
+    //             Particle * particle = new Particle(0, Vector3f(i * GRID + LEFT, j * GRID + BOTTOM, k * GRID + BACK), Vector3f(0, 0, 0));
+    //             int gridX = floor((particle->getPosition().x() - LEFT)/GRID);
+    //             int gridY = floor((particle->getPosition().y() - BOTTOM)/GRID);
+    //             int gridZ = abs(floor((particle->getPosition().z() - FRONT)/GRID));
+    //             // grids[i][j][k].vParts
+    //             grids[gridX][gridY][gridZ].particles.push_back(particle);
+    //             particles->push_back(particle);
+    //         }
+    //     }
+    // }
+    // cout << "HERE-1.5" << endl;
     for(int i= 0 ; i < maxParts; i ++){
-            // double x = fRand(-0.1, 0.1);
-            // double y = fRand(0.5, 0.6);
-            // double z = fRand(-1.1, -1.6);
-            // double x = fRand(WIDTH/2 - 25,WIDTH/2 + 25);
-            // double y = fRand(HEIGHT-175, HEIGHT-125);
-            // double z = fRand(-30, -35);
-            // double x = fRand(385, 415);
-            // double y = fRand(425, 465);
-            // double z = fRand(-385, -415);
-            double x = fRand(350, 450);
-            double y = fRand(450, 475);
-            double z = fRand(-350, -450);
+            double x = fRand(375, 415);
+            double y = fRand(475, 625);
+            double z = fRand(-375, -415);
             Vector3f pos(x, y, z);
-
+            // cout << "HERE-1" << endl;
             int gridX = floor((x - LEFT)/GRID);
             int gridY = floor((y - BOTTOM)/GRID);
-            int gridZ = floor((z - BACK)/GRID);
+            int gridZ = floor(abs((z - FRONT)/GRID));
             Particle *p = new Particle(MASS, pos, Vector3f(0, 0, 0));
             p->setGridPosition(Vector3f(gridX, gridY, gridZ));
             grids[gridX][gridY][gridZ].particles.push_back(p);
             particles->push_back(p);
-
-
-        //postition partitioned by width of grid cube = support radius H
-            // spatialHashTable[pos/H] = p;
-        // particles->push_back(p);
-        //cout << "particle " << i << " position: " << pos/H << endl;
-        //cout << "hash returns pos: " << spatialHashTable[pos/(H)] << endl;
     }
-    // cout << spatialHashTable.max_load_factor() << endl;
-    // cout << spatialHashTable.load_factor() << endl;
-    // cout << spatialHashTable.size() << endl;
-    // cout << spatialHashTable.bucket_count() << endl;
-    // for(int i = 0; i < particles->size(); i++){
-        // cout << "particle " << i << " with position: " << particles->at(i)->getPosition() /H << " bucket # " << spatialHashTable.bucket(particles->at(i)->getPosition() /H) << endl; }
-
+    // cout << particles->size() << endl;
 }
 
 
@@ -82,46 +72,41 @@ void Scene::render(){
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);               // clear the color buffer
         glMatrixMode(GL_MODELVIEW);                   // indicate we are specifying camera transformations
         glLoadIdentity();
-        gluLookAt(0.0, 0.15, -1.20, 0.0, 0.15, -10.0, 0.0, 1.0, 0.0);
-        //gluLookAt(0.0, 0.6, -1.25, .0, 0.0, -2.1, 0.0, 1.0, 0.0);
-        // gluLookAt()
-        // if(t % 5 == 0) {
-        //     init();
-        // }
+        // gluLookAt(0.0, 0.15, -1.0, 0.0, 0.15, -10.0, 0.0, 1.0, 0.0);
+        // gluLookAt(0.0, 0.0, 0.65, 0.0, 0.0, -10.0, 0.0, 1.0, 0.0);
+        // gluLookAt(0.0, 0.6, -1.25, .0, 0.0, -2.1, 0.0, 1.0, 0.0);
+        // gluLookAt(0.0, 0.0, -1.0,0.0, 0.0, -10.0, 0.0, 1.0, 0.0);
+        gluLookAt(0.0, 0.6, -0.8, 0.0, -1.0, -10.0, 0.0, 1.0, 0.0);
 
         //Draw the boundaries
-       // if (t < 100)
         drawBoundaries();
 
-        vector<vector<Particle * > > neighbors;
-        double totalDens = 0;
-
         //density calculations
-        #pragma omp parallel for
+        vector<vector<Particle * > > neighbors;
+        // double totalDens = 0;
+        // cout << "HERE0" << endl;
         for(int i = 0; i < particles->size(); i++){  //for every particle
-
+            //cout << omp_get_num_threads() << endl;
             Particle *particle = particles->at(i);
             double density = MASS;
             vector<Particle *> findNeighs;
             Vector3f gridPos = particle->getGridPosition();
             Vector3f BBmin = gridPos - Vector3f(1, 1, 1);
             Vector3f BBmax = gridPos + Vector3f(1, 1, 1);
-            // Vector3f BBmin = ((particle->getPosition()) - Vector3f(H,H,H))/H;
-            // Vector3f BBmax = ((particle->getPosition()) + Vector3f(H,H,H))/H;
-            // Vector3f discretePos = particle->getPosition();
-            // int bucket = spatialHashTable.bucket(discretePos / H);
-            // for (std::tr1::__detail::_Node_iterator<std::pair<const Vector3f, Particle*>, false, false> local_it = spatialHashTable.begin(bucket); local_it!= spatialHashTable.end(bucket); ++local_it){
-            //     Particle * boundingPart = local_it->second;
-            //     if(boundingPart != particle){
+
             for(int y = BBmin.y(); y <=BBmax.y(); y++){
                 for(int x = BBmin.x(); x <=BBmax.x(); x++){
                     for(int z = BBmin.z(); z <= BBmax.z(); z++){
-                        if(x >= 0 && y >= 0 && z >= 0 && x < GRIDX && y < GRIDY && z < GRIDZ){
+
+                        if(x >= 0 && y >= 0 && z >= 0 && x <= GRIDX && y <= GRIDY && z <= GRIDZ){
+                            // cout << "HERE " << endl;
                             vector<Particle *> gridParticles = grids[x][y][z].particles;
+
                             for(int j = 0; j < gridParticles.size(); j++){
                                 Particle *tempParticle = gridParticles.at(j);
                                 double dist = particle->getDistance(*tempParticle);
-                                if(dist <= H && particle != tempParticle){
+
+                                if(dist <= H && dist != 0){
                                     double kern = particle->getKernel(dist);
                                     density += tempParticle->getMass() * kern;
                                     findNeighs.push_back(tempParticle);
@@ -131,98 +116,86 @@ void Scene::render(){
                     }
                 }
             }
-
-            // double density = MASS;
-            //              for(int l = 0; l < particles->size(); l++){  //naive
-            //                     Particle *tempParticle = particles->at(l);
-            //                     double dist = particle->getDistance(*tempParticle);
-
-            //                     if (dist <= H){  //if the particle is close enough, add its mass * kernel to the density
-            //                         double kern = particle->getKernel(dist);
-
-            //                         density += tempParticle->getMass() * kern;
-            //                     }
-            //                }
-            //                particle->setDensity(density);
-
-                    // double dist = particle->getDistance(*boundingPart);
-                    // double kern = particle->getKernel(dist);
-// <<<<<<< HEAD
-//                     //cout << dist << endl;
-//                     density += tempParticle->getMass() * kern;
-//                     findNeighs.push_back(tempParticle);
-// =======
-                    // density += boundingPart->getMass() * kern;
-                    // findNeighs.push_back(boundingPart);
-// >>>>>>> 5ad23f67caebdc40bc1666acd09a99ece0e20ef7
-
-            //cout << "bb for particle " << i << endl;
-            //for(double x= BBmin.x(); x<= BBmax.x(); x+=1.0/H){
-              //  for(double y=BBmin.y(); y<= BBmax.y(); y+=1.0/H){
-                //    for(double z=BBmin.z(); z<= BBmax.z(); z+=1.0/H){
-                       // discretePos.x() = x;
-                       // discretePos.y() = y;
-                       // discretePos.z() = z;
-                        //cout << discretePos << endl;
-                       // Particle *boundingPart = spatialHashTable[discretePos];
-                        //cout << boundingPart << endl;
-                       // if(boundingPart == 0){break;}
-                        //cout << "hit" << endl;//no particle at position
-                        //double dist = particle->getDistance(*boundingPart);
-                        //if(dist <= H && particle != boundingPart)
-                        //{   double kern = particle->getKernel(dist);
-                         //   density += boundingPart->getMass() * kern;
-                         //   findNeighs.push_back(boundingPart);}
-               //     }
-             //   }
-
-           // }
-
-            neighbors.push_back(findNeighs);
             particle->setDensity(density);
-// <<<<<<< HEAD
-            totalDens += density;
-// =======
-//            // cout << "hello 4" << endl;
-// >>>>>>> 5ad23f67caebdc40bc1666acd09a99ece0e20ef7
+            #pragma omp critical
+            {
+            neighbors.push_back(findNeighs);
+            // totalDens += density;
+            }
         }
-        // cout << totalDens / particles->size() << endl;
+                    // cout << "HERE1" << endl;
+        // cout << totalDens/particles->size() << endl;
 
+        //Marching Cubes
         if(march == 1){
 
-            int x = (RIGHT - LEFT) / GRID + 1;
-            int y = (TOP - BOTTOM)/GRID + 1;
-            int z = (abs(BACK - FRONT))/GRID + 1;
+            int x = GRIDX + 1;
+            int y = GRIDY + 1;
+            int z = GRIDZ + 1;
+            // cout << "HERE" << endl;
             // cout << x << " " << y << " " << z << endl;
 
-            Particle * grid[x][y][z];
+            Particle **** grid;
+            grid = new Particle***[x];
+            for(int i=0;i<x;i++){
+                grid[i] = new Particle **[y];
+            }
+            for(int i = 0; i < x; i ++){
+                for(int j = 0; j < y; j++){
+                    grid[i][j] = new Particle*[z];
+                }
+            }
+            // cout << "HERE2" << endl;
 
+            double totalDens = 0;
+            int count = 0;
             for(int i = 0; i < x; i++){
                 for(int j = 0; j < y; j++){
                     for(int k = 0; k < z; k++){
                         Particle* particle = new Particle(MASS, Vector3f(i  * GRID + LEFT, j * GRID + BOTTOM, k * GRID + BACK), Vector3f(0, 0, 0));
+                        count ++;
                         double density = MASS;
-                         for(int l = 0; l < particles->size(); l++){  //naive
-                                Particle *tempParticle = particles->at(l);
-                                double dist = particle->getDistance(*tempParticle);
+                        Vector3f gridPos((particle->getPosition().x() - LEFT)/GRID, (particle->getPosition().y() - BOTTOM)/GRID, abs((particle->getPosition().z() - FRONT)/GRID));
+                        // cout << gridPos << endl << endl;
+                        Vector3f BBmin = gridPos - Vector3f(1, 1, 1);
+                        Vector3f BBmax = gridPos + Vector3f(1, 1, 1);
 
-                                if (dist <= H){  //if the particle is close enough, add its mass * kernel to the density
-                                    double kern = particle->getKernel(dist);
+                        for(int b = BBmin.y(); b <=BBmax.y(); b++){
+                            for(int a = BBmin.x(); a <=BBmax.x(); a++){
+                                for(int c = BBmin.z(); c <= BBmax.z(); c++){
+                                    // cout << x  << " " << y << " " << z << endl;
+                                    if(b >= 0 && a >= 0 && c >= 0 && a <= GRIDX && b <= GRIDY && c <= GRIDZ){
+                                        // cout << "HERE " << endl;
+                                        vector<Particle *> gridParticles = grids[a][b][c].particles;
 
-                                    density += tempParticle->getMass() * kern;
+                                        for(int l = 0; l < gridParticles.size(); l++){
+                                            Particle *tempParticle = gridParticles.at(l);
+                                            double dist = particle->getDistance(*tempParticle);
+
+                                            if(dist <= H &&  dist != 0){
+                                                double kern = particle->getKernel(dist);
+                                                                                                // cout << kern << endl;
+                                                density += tempParticle->getMass() * kern;
+                                            }
+                                        }
+                                    }
                                 }
-                           }
-                           particle->setDensity(density);
-                           grid[i][j][k] = particle;
-                           //cout << density << endl;
+                            }
+                        }
+                        particle->setDensity(density);
+                        totalDens += density;
+                        // cout << totalDens/count << endl;
+                        grid[i][j][k] = particle;
                     }
                 }
             }
 
 
+
             for(int i = LEFT; i < RIGHT; i += GRID){
                 for(int j = BOTTOM; j < TOP; j += GRID){
                     for(int k = BACK; k < FRONT; k +=GRID){
+                        // cout << "HERE" << endl;
                         GRIDCELL g;
                         int x1 = (i - LEFT)/GRID;
                         int x2 = (i + GRID - LEFT)/GRID;
@@ -303,26 +276,7 @@ void Scene::render(){
                         g.p[7] = Vector3f(p->getPosition());
                         g.val[7] = p->getDensity();
 
-
-
-                        // glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
-                        // glBegin(GL_QUADS); //bottom
-                        //     glColor4f(0.1, 0.8, 0.6, 0.8);//235/255.0, 244/255.0, 250/255.0, 1.0);
-                        //     glVertex3d(convert(g.p[0].x(), WIDTH), convert(g.p[0].y(), HEIGHT), convert(g.p[0].z(), LENGTH));
-                        //     glVertex3d(convert(g.p[3].x(), WIDTH), convert(g.p[3].y(), HEIGHT), convert(g.p[3].z(), LENGTH));
-                        //     glVertex3d(convert(g.p[7].x(), WIDTH), convert(g.p[7].y(), HEIGHT), convert(g.p[7].z(), LENGTH));
-                        //     glVertex3d(convert(g.p[4].x(), WIDTH), convert(g.p[4].y(), HEIGHT), convert(g.p[4].z(), LENGTH));
-                        // glEnd();
-
-                        // glBegin(GL_QUADS); //bottom
-                        //     glVertex3d(convert(g.p[4].x(), WIDTH), convert(g.p[4].y(), HEIGHT), convert(g.p[4].z(), LENGTH));
-                        //     glVertex3d(convert(g.p[5].x(), WIDTH), convert(g.p[5].y(), HEIGHT), convert(g.p[5].z(), LENGTH));
-                        //     glVertex3d(convert(g.p[6].x(), WIDTH), convert(g.p[6].y(), HEIGHT), convert(g.p[6].z(), LENGTH));
-                        //     glVertex3d(convert(g.p[7].x(), WIDTH), convert(g.p[7].y(), HEIGHT), convert(g.p[7].z(), LENGTH));
-                        // glEnd();
-                        // glPolygonMode( GL_FRONT_AND_BACK, GL_FILL);
-
-                        cubes->polygonise(g, totalDens/particles->size());
+                        cubes->polygonise(g, totalDens/count);
 
 
 
@@ -330,25 +284,34 @@ void Scene::render(){
                 }
             }
         }
+
+
         //second iteration of particles and only their neighbors
-        #pragma omp parallel for
+        //#pragma omp parallel for
         for(int i = 0; i < particles->size(); i++){
             Particle *particle = particles->at(i);
+
+            // if(particle->getMass() == 0){ //Particle mass is 0 if it is a vertex particle; we don't want to calculate forces for it
+            //     continue;
+            // }
+
             Vector3f position = particle->getPosition();
             Vector3f velocity = particle->getVelocity();
+            // cout << position << endl << endl;
 
             //http://stackoverflow.com/questions/17565664/gluproject-and-2d-display
             //Render particle
-            GLdouble posX, posY, posZ;//3D point
-            posX=convert(position.x(), WIDTH);
-            posY=convert(position.y(), HEIGHT);
-            posZ=convert(position.z(), LENGTH);
+            if(march == 0){
+                GLdouble posX, posY, posZ;//3D point
+                posX=convert(position.x(), WIDTH);
+                posY=convert(position.y(), HEIGHT);
+                posZ=convert(position.z(), LENGTH);
 
-            glPushMatrix();
-                glTranslated(posX, posY, posZ);
-                glutSolidSphere(SRADIUS, 10, 10);
-            glPopMatrix();
-
+                glPushMatrix();
+                    glTranslated(posX, posY, posZ);
+                    glutSolidSphere(SRADIUS, 10, 10);
+                glPopMatrix();
+            }
             //Force calculations
             Vector3f viscosityForce = Vector3f::Zero();
             Vector3f pressureForce = Vector3f::Zero();
@@ -357,6 +320,7 @@ void Scene::render(){
             double pressureJ = particle->calcPressure();
 
             vector<Particle * > curNeighs = neighbors[i];
+            // cout << curNeighs.size() << endl;
             // cout << "particle " << i << " num neighbors" << curNeighs.size() << endl;
             for(int j = 0; j < curNeighs.size(); j++){//currNeighs.size(); j++){
 
@@ -366,20 +330,23 @@ void Scene::render(){
                 Vector3f tempVel = tempParticle->getVelocity();
                 double dist = particle->getDistance(*tempParticle);
                 double kern = particle->getKernel(dist);
+                // cout << "dist: " << dist << "\npos: " << position << "\ntempPos: " << tempParticle->getPosition() << endl;
 
-                //Pressure
-                Vector3f rij = tempParticle->getPosition() - position;
-                Vector3f kernDerive = particle->getKernDerive(dist, rij);
-                double pressureK = tempParticle->calcPressure();
-                pressureForce += tempMass * (pressureJ + pressureK) / (2 * tempDens) * kernDerive;
+                if(dist != 0){
+                    //Pressure
+                    Vector3f rij = tempParticle->getPosition() - position;
+                    Vector3f kernDerive = particle->getKernDerive(dist, rij);
+                    double pressureK = tempParticle->calcPressure();
+                    pressureForce += tempMass * (pressureJ + pressureK) / (2 * tempDens) * kernDerive;
 
-                //Viscosity
-                double kernSecond = particle->getKernSecond(dist);
-                viscosityForce += (tempVel - velocity) * tempMass / tempDens * kernSecond;
+                    //Viscosity
+                    double kernSecond = particle->getKernSecond(dist);
+                    viscosityForce += (tempVel - velocity) * tempMass / tempDens * kernSecond;
 
-                //Surface Tension
-                surfaceNormal += tempMass / tempDens * kernDerive;
-                colorField += tempMass / tempDens * kernSecond;
+                    //Surface Tension
+                    surfaceNormal += tempMass / tempDens * kernDerive;
+                    colorField += tempMass / tempDens * kernSecond;
+                }
             }
             // cout << surfaceNormal << endl;
             pressureForce *= -1;
@@ -390,6 +357,7 @@ void Scene::render(){
 
             //Update next position
             Vector3f totalForce = gravityForce + pressureForce + viscosityForce;
+            //cout << "vForce: " << viscosityForce << endl;
             if (surfaceNormal.norm() >= 0.00001)
                 totalForce += surfaceTension;
             //cout << "totalForce: " << totalForce << endl;
@@ -399,7 +367,11 @@ void Scene::render(){
             //cout << "2. " << velocity << endl;
             Vector3f newPosition = position + DELTAT * newVelocity;
 
+            // cout << "HERE2" << endl;
 
+
+
+            //Boundary checks
             double c = -0.3;
             if(newPosition.y() - EPSILON < BOTTOM){
                 double d = abs(newPosition.y() - BOTTOM);
@@ -431,38 +403,71 @@ void Scene::render(){
                 newPosition = Vector3f(newPosition.x(), newPosition.y(), newPosition.z() - d);
                 newVelocity = Vector3f(newVelocity.x(), newVelocity.y(), newVelocity.z() * c);
             }
+                        Vector3f gridPos((newPosition.x() - LEFT)/GRID, (newPosition.y() - BOTTOM)/GRID, abs((newPosition.z() - FRONT)/GRID));
+
+            if(!(gridPos.x() >= 0 && gridPos.y() >= 0 && gridPos.z() >= 0 && gridPos.x() <= GRIDX && gridPos.y() <= GRIDY && gridPos.z() <= GRIDZ)) {
+                cout << "gridPos: " << gridPos << endl;
+                cout << "surface tension: " << surfaceTension << endl;
+                cout << "pressure: " << pressureForce << endl;
+                exit(0);
+            }
+
             particle->setPosition(newPosition);
             particle->setVelocity(newVelocity);
         }
-        //reset and update spatial hash table
-        // spatialHashTable.clear();
-        // for(int i=0; i< particles -> size();i++){
-        //     Particle *p = particles->at(i); Vector3f pos = p->getPosition(); spatialHashTable[pos/H]=p;}
+
+
         saveImage(t);
 
         glFlush();
         glutSwapBuffers();
         glPopMatrix();
 
+        // cout << "HERE3" << endl;
+
+        //Clear particle in current grids
         for(int i = 0; i < GRIDX; i++){
             for(int j = 0; j < GRIDY; j++){
                 for(int k = 0; k < GRIDZ; k++){
                     grids[i][j][k].particles.clear();
+                    // vector<Particle * > particles = grids[i][j][k].particles;
+                    // int l = 0;
+                    // for(vector<Particle *>::iterator it = particles.begin(); it != particles.end();) {   //Delete only particles with mass from GRIDCELL; particles without mass are vertex particles
+                    //     if(particles[l]->getMass() != 0){
+                    //         it = particles.erase(it);
+                    //     } else{
+                    //         ++it;
+                    //         ++l;
+                    //     }
+                    // }
                 }
             }
         }
+        //cout << "HERE1" << endl;
+        // cout << "HERE4" << endl;
 
+        //Update particles in each grid
         for(int i = 0; i < particles->size(); i++){
+            // cout << "i: " << i << " size: " << particles->size() << endl;
+            // cout << "HERE1" << endl;
             Particle *particle = particles->at(i);
+            // if(particle->getMass() != 0){
             Vector3f position = particle->getPosition();
+            // cout << position << endl << endl;
             int gridX = floor((position.x() - LEFT)/GRID);
             int gridY = floor((position.y() - BOTTOM)/GRID);
-            int gridZ = floor((position.z() - BACK)/GRID);
+            int gridZ = abs(floor((position.z() - FRONT)/GRID));
+            //cout << "HERE2" << endl;
             particle->setGridPosition(Vector3f(gridX, gridY, gridZ));
+            // cout << "HERE3" << endl;
+            // cout << gridX << " " << gridY << " " << gridZ << endl;
             grids[gridX][gridY][gridZ].particles.push_back(particle);
+            //cout << "HERE4" << endl;
+            // }
         }
     }
 }
+
 
 
 void Scene::drawBoundaries(){
@@ -619,7 +624,10 @@ double Particle::getKernel(double r){
 
 Vector3f Particle::getKernDerive(double r, Vector3f rij){
     double c = -45 / (M_PI * pow((double) H, 6.0));
-    return c * rij / r * (pow(H - r, 2));
+    if (r == 0){
+        r = 0.001;
+    }
+    return c * (rij / r) * (pow(H - r, 2));
 }
 
 double Particle::getKernSecond(double r){

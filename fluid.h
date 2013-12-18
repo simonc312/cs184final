@@ -17,6 +17,7 @@
 #include <cstring>
 #include <omp.h>
 #include <tr1/unordered_map>
+#include <math.h>
 
 
 #ifdef _WIN32
@@ -69,12 +70,12 @@
 #define SRADIUS 0.01 // RADIUS / (WIDTH/2)
 #define TENSION 0.07
 
-#define LEFT 345//-0.5
-#define RIGHT 455//0.5
+#define LEFT 300//-0.5
+#define RIGHT 500//0.5
 #define BOTTOM 300//-0.6
-#define TOP 500// 0.7
-#define FRONT -345
-#define BACK -455
+#define TOP 670// 0.7
+#define FRONT -300
+#define BACK -500
 #define WIDTH 800
 #define HEIGHT 700
 #define LENGTH 800
@@ -121,19 +122,8 @@ typedef struct {
    Vector3f p[8];
    double val[8];
    vector<Particle * > particles;
+   // Particle * vParts[8];
 } GRIDCELL;
-
-typedef struct hash_function{
-    size_t operator()(const Vector3f &pos) const
-    {
-        return (((int)pos.x()*73856093) xor ((int)pos.y()*19349663) xor ((int)pos.z()*83492791)) % (2*(2000)+1);
-    }
-};
-
-typedef struct
-{
-    bool operator() (const Vector3f &v1, const Vector3f &v2) const { return ((v1 - v2).norm() <= 0.1); }
-} HashKeyEq;
 
 
 
@@ -141,7 +131,6 @@ class Scene{
 public:
     Scene(int p, double t, double s, int m);
     vector<Particle *> *particles;
-    tr1::unordered_map<Vector3f,Particle *, hash_function, HashKeyEq> spatialHashTable;
     void render();
     GRIDCELL *** grids;
 private:
