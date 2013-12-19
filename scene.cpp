@@ -29,9 +29,9 @@ void Scene::init(){
     srand(time(NULL));
     #pragma omp for
     for(int i= 0 ; i < maxParts; i ++){
-            double x = fRand(375, 415);
-            double y = fRand(475, 625);
-            double z = fRand(-375, -415);
+            double x = fRand(350, 450);
+            double y = fRand(600, 665);
+            double z = fRand(-350, -450);
             Vector3f pos(x, y, z);
             // cout << "HERE-1" << endl;
             int gridX = floor((x - LEFT)/GRID);
@@ -55,10 +55,10 @@ void Scene::render(){
         glMatrixMode(GL_MODELVIEW);                   // indicate we are specifying camera transformations
         glLoadIdentity();
         // gluLookAt(0.0, 0.15, -1.0, 0.0, 0.15, -10.0, 0.0, 1.0, 0.0);
-        // gluLookAt(0.0, 0.0, 0.65, 0.0, 0.0, -10.0, 0.0, 1.0, 0.0);
+        gluLookAt(0.0, 0.0, 0.65, 0.0, 0.0, -10.0, 0.0, 1.0, 0.0);
         // gluLookAt(0.0, 0.6, -1.25, .0, 0.0, -2.1, 0.0, 1.0, 0.0);
         // gluLookAt(0.0, 0.0, -1.0,0.0, 0.0, -10.0, 0.0, 1.0, 0.0);
-        gluLookAt(0.0, 0.6, -0.8, 0.0, -1.0, -10.0, 0.0, 1.0, 0.0);
+        // gluLookAt(0.0, 0.6, -0.8, 0.0, -1.0, -10.0, 0.0, 1.0, 0.0);
 
         //Draw the boundaries
         drawBoundaries();

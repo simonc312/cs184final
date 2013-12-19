@@ -48,12 +48,12 @@
 #define SRADIUS 0.01 // RADIUS / (WIDTH/2)
 #define TENSION 0.07
 
-#define LEFT 300//-0.5
-#define RIGHT 500//0.5
-#define BOTTOM 300//-0.6
+#define LEFT 30//-0.5
+#define RIGHT 770//0.5
+#define BOTTOM 30//-0.6
 #define TOP 670// 0.7
-#define FRONT -300
-#define BACK -500
+#define FRONT -30
+#define BACK -770
 #define WIDTH 800
 #define HEIGHT 700
 #define LENGTH 800

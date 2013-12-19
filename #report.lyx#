@@ -692,6 +692,13 @@ The naive approach to fluid simulation using SPH compares every single particle
  
 \end_layout
 
+\begin_layout Standard
+We also used OpenMP to parallelise the majority of our tasks, including
+ particle initialisation, density and force calculations, and marching cubes.
+ Due to the parallelism, our runtimes were again reduced, as expected.
+ 
+\end_layout
+
 \begin_layout Section*
 Surface Reconstruction
 \end_layout
@@ -724,8 +731,8 @@ Results
 \end_layout
 
 \begin_layout Standard
-In our original naive implementation (without the spatial gridcells), computatio
-n time was very, very slow.
+In our original naive implementation (comparing every particle to every
+ other particle), computation time was very, very slow.
  For example, to render 
 \begin_inset Formula $200$
 \end_inset
@@ -747,8 +754,25 @@ n time was very, very slow.
 \end_inset
 
  seconds per timestep.
+ To render 
+\begin_inset Formula $300$
+\end_inset
+
+ time steps of 
+\begin_inset Formula $2000$
+\end_inset
+
+ particles took almost an hour, corresponding to 
+\begin_inset Formula $12$
+\end_inset
+
+ seconds per time step.
  This rendering time is very undesirable, so we set out to improve the runtime.
- After successfully implementing our spatial gridcells, we managed to cut
+ 
+\end_layout
+
+\begin_layout Standard
+After successfully implementing our spatial gridcells, we managed to cut
  down runtime dramatically.
  Now, to render 
 \begin_inset Formula $200$
@@ -787,8 +811,160 @@ n time was very, very slow.
 \begin_inset Formula $20,000$
 \end_inset
 
- particles, averaging to 
+ particles, averaging 
 \begin_inset Formula $4.51$
+\end_inset
+
+ seconds per time step.
+ 
+\end_layout
+
+\begin_layout Standard
+With marching cubes, computation time was obviously longer, but still decently
+ fast.
+ 
+\begin_inset Formula $200$
+\end_inset
+
+ time steps of 
+\begin_inset Formula $1000$
+\end_inset
+
+ particles took 
+\begin_inset Formula $9$
+\end_inset
+
+ minutes and 
+\begin_inset Formula $58$
+\end_inset
+
+ minutes total, 
+\begin_inset Formula $3$
+\end_inset
+
+ seconds per time step.
+ Our reconstructed surface from marching cubes was not the most aesthetically
+ pleasing.
+ While it is clear that there is a surface of the fluid, it is very globular
+ and bumpy.
+ The triangles calculated by the marching cubes algorithm also do not draw
+ outside of the boundaries of the container, therefore, at the boundaries,
+ no surface is actually reconstructed, leaving odd gaps underneath the surface.
+ 
+\end_layout
+
+\begin_layout Standard
+After we added in parallelism, our runtimes were again reduced, although
+ not as dramatically as with the gridcells.
+ At 
+\begin_inset Formula $200$
+\end_inset
+
+ time steps of 
+\begin_inset Formula $5000$
+\end_inset
+
+ particles, it took a total of 
+\begin_inset Formula $2$
+\end_inset
+
+ minutes and 
+\begin_inset Formula $18$
+\end_inset
+
+ seconds to calculate, averaging 
+\begin_inset Formula $0.691$
+\end_inset
+
+ seconds per time step.
+ On the higher end of particle count, 
+\begin_inset Formula $200$
+\end_inset
+
+ time steps of 
+\begin_inset Formula $20000$
+\end_inset
+
+ particles took about 
+\begin_inset Formula $6$
+\end_inset
+
+ minutes, averaging around 
+\begin_inset Formula $1.8$
+\end_inset
+
+ seconds per time step; 
+\begin_inset Formula $300$
+\end_inset
+
+ time steps of 
+\begin_inset Formula $30000$
+\end_inset
+
+ particles took a total of 
+\begin_inset Formula $45$
+\end_inset
+
+ minutes and 
+\begin_inset Formula $18$
+\end_inset
+
+ seconds to render, averaging 
+\begin_inset Formula $9.06$
+\end_inset
+
+ seconds per time step.
+\end_layout
+
+\begin_layout Standard
+Using both parallelism and marching cubes, we achieved a total time of 
+\begin_inset Formula $19$
+\end_inset
+
+ minutes and 
+\begin_inset Formula $48$
+\end_inset
+
+ seconds for 
+\begin_inset Formula $300$
+\end_inset
+
+ time steps of 
+\begin_inset Formula $5000$
+\end_inset
+
+ particles, resulting in an average of 
+\begin_inset Formula $3.96$
+\end_inset
+
+ seconds per time step.
+ We attempted to render 
+\begin_inset Formula $400$
+\end_inset
+
+ time steps of 
+\begin_inset Formula $21,000$
+\end_inset
+
+ particles, but I stopped the rendering after 
+\begin_inset Formula $177$
+\end_inset
+
+ time steps, wrongly thinking my computer had frozen.
+ Instead, we managed to render 
+\begin_inset Formula $177$
+\end_inset
+
+ time steps, which took a total of 
+\begin_inset Formula $203$
+\end_inset
+
+ minutes and 
+\begin_inset Formula $6$
+\end_inset
+
+ seconds, averaging at 
+\begin_inset Formula $68.85$
 \end_inset
 
  seconds per time step.
